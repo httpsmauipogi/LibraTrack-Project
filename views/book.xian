@@ -1,0 +1,43 @@
+{{> head}}
+<body class="bg-gray-50">
+{{> navbar}}
+
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <a href="/books" class="text-sm text-indigo-600 mb-4 inline-block hover:underline">&larr; Back to Catalog</a>
+
+  <div class="bg-white rounded-xl shadow border border-gray-100 p-8">
+    <div class="flex justify-between items-start gap-4">
+      <div>
+        <span class="inline-block px-2 py-0.5 text-xs font-medium rounded bg-indigo-50 text-indigo-700">{{book.genre}}</span>
+        <h1 class="text-3xl font-bold text-gray-900 mt-3">{{book.title}}</h1>
+        <p class="text-lg text-gray-600 mt-1">by {{book.author}}</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 mt-8 text-sm">
+      <div class="bg-gray-50 rounded-lg p-4">
+        <p class="text-gray-500">Total Copies</p>
+        <p class="font-semibold text-gray-900 mt-1">{{book.copies}}</p>
+      </div>
+      <div class="bg-gray-50 rounded-lg p-4">
+        <p class="text-gray-500">Available</p>
+        <p class="font-semibold text-gray-900 mt-1">{{book.available}}</p>
+      </div>
+    </div>
+
+    <div class="mt-8">
+      {{#if alreadyBorrowed}}
+        <div class="bg-amber-50 border border-amber-200 p-4 rounded-lg">
+          <p class="text-amber-800 text-sm">You already have a <strong class="capitalize">{{alreadyBorrowed.status}}</strong> borrowing request for this book.</p>
+        </div>
+      {{else if book.available}}
+        <form method="POST" action="/books/{{book.id}}/borrow">
+          <button type="submit" class="w-full px-6 py-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700">Borrow This Book</button>
+        </form>
+      {{else}}
+        <button disabled class="w-full px-6 py-4 bg-gray-200 text-gray-400 font-semibold rounded-lg cursor-not-allowed">Currently Unavailable</button>
+      {{/if}}
+    </div>
+  </div>
+</div>
+{{> footer}}
