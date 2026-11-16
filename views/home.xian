@@ -1,0 +1,295 @@
+{{> head }}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LibraTrack - Integrated Library Management System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        libra: {
+                            deep: '#1e1b4b',
+                            accent: '#4f46e5',
+                            accentHover: '#4338ca',
+                            lightBg: '#f8fafc',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .view-section {
+            display: none;
+        }
+        .view-section.active-view {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col custom-scrollbar">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- ================= VIEW 1: PUBLIC HOME PAGE ================= -->
+    <div id="view-home" class="view-section active-view flex-1 flex flex-col">
+        <!-- Public Top Header Navigation -->
+        <header class="bg-libra-deep text-white border-b border-indigo-950 sticky top-0 z-40 shadow-md">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+                <!-- Brand -->
+                <div class="flex items-center gap-3 cursor-pointer" onclick="showPublicView('hero')">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-indigo-600/30">
+                        <i class="fa-solid fa-book-open"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-extrabold text-white text-xl tracking-tight leading-tight">LibraTrack</h1>
+                        <span class="text-[11px] text-indigo-200 block">Integrated Library System</span>
+                    </div>
+                </div>
+
+                <!-- Nav Links -->
+                <nav class="hidden md:flex items-center gap-8 text-sm font-semibold text-indigo-100">
+                    <a href="#hero" onclick="showPublicView('hero')" class="hover:text-white transition-colors">Home</a>
+                    <a href="#public-catalog" onclick="showPublicView('catalog')" class="hover:text-white transition-colors">Book Catalog</a>
+                    <a href="#services" onclick="showPublicView('services')" class="hover:text-white transition-colors">Library Services</a>
+                    <a href="#about" onclick="showPublicView('about')" class="hover:text-white transition-colors">Hours & Info</a>
+                </nav>
+
+                <!-- Action Button -->
+                <div class="flex items-center gap-3">
+                    <a href="/login" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm rounded-xl transition-all shadow-md flex items-center gap-2 border border-indigo-400/30">
+                        <i class="fa-solid fa-right-to-bracket"></i> Login / Access Portal
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Home Page Main Container -->
+        <main class="flex-1">
+            <!-- HERO SECTION -->
+            <section id="hero-section" class="bg-gradient-to-b from-libra-deep via-indigo-950 to-slate-900 text-white py-16 lg:py-24 px-4 sm:px-6 lg:px-8">
+                <div class="max-w-7xl mx-auto text-center space-y-8">
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-xs font-bold uppercase tracking-wider mb-2">
+                        <i class="fa-solid fa-sparkles text-amber-400"></i> Modern Digital Library Infrastructure
+                    </div>
+                    <h1 class="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight max-w-4xl mx-auto leading-tight">
+                        LibraTrack: Integrated Library & Borrowing System
+                    </h1>
+                    <p class="text-base sm:text-lg text-indigo-200/90 max-w-2xl mx-auto font-normal">
+                        Explore thousands of books, manage borrowings, track return dates, and calculate late penalties dynamically through our real-time integrated portal.
+                    </p>
+
+                    <!-- Public Hero Search Bar -->
+                    <div class="max-w-2xl mx-auto relative">
+                        <div class="flex items-center bg-white rounded-2xl shadow-2xl p-2 border border-indigo-200">
+                            <i class="fa-solid fa-magnifying-glass text-slate-400 text-lg ml-4 mr-2"></i>
+                            <input type="text" id="public-hero-search-input" placeholder="Search by book title, author, category or ISBN..." class="w-full text-slate-800 text-sm py-2 px-2 focus:outline-none font-medium">
+                            <button onclick="executePublicSearch()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold text-sm transition-colors shrink-0 flex items-center gap-2">
+                                Search Catalog
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Statistics Bar -->
+                    <div class="pt-8 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto text-left">
+                        <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+                            <p class="text-xs font-bold uppercase text-indigo-300">Total Book Titles</p>
+                            <h3 id="public-stat-titles" class="text-2xl lg:text-3xl font-extrabold text-white mt-1">0</h3>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+                            <p class="text-xs font-bold uppercase text-indigo-300">Copies Available</p>
+                            <h3 id="public-stat-available" class="text-2xl lg:text-3xl font-extrabold text-emerald-400 mt-1">0</h3>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+                            <p class="text-xs font-bold uppercase text-indigo-300">Active Borrowers</p>
+                            <h3 id="public-stat-patrons" class="text-2xl lg:text-3xl font-extrabold text-amber-400 mt-1">0</h3>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+                            <p class="text-xs font-bold uppercase text-indigo-300">System Status</p>
+                            <h3 class="text-2xl lg:text-3xl font-extrabold text-emerald-400 mt-1 flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span> Online
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FEATURED BOOKS & PUBLIC CATALOG CATALOG -->
+            <section id="public-catalog-section" class="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
+                <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-6">
+                    <div>
+                        <span class="text-xs font-bold uppercase text-indigo-600 tracking-wider">Public Inventory Browser</span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">Featured & Available Catalog</h2>
+                    </div>
+                    <!-- Filters -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        <select id="public-category-filter" onchange="renderPublicCatalog()" class="bg-white border border-slate-300 text-slate-700 text-sm font-semibold rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm">
+                            <option value="ALL">All Categories</option>
+                            <option value="Science & Tech">Science & Tech</option>
+                            <option value="Fiction">Fiction</option>
+                            <option value="History">History</option>
+                            <option value="Biography">Biography</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Book Cards Grid -->
+                <div id="public-books-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- Dynamically Populated -->
+                </div>
+            </section>
+
+            <!-- SERVICES & NOTICE BOARD -->
+            <section id="services-section" class="bg-slate-100 py-16 px-4 sm:px-6 lg:px-8">
+                <div class="max-w-7xl mx-auto space-y-12">
+                    <div class="text-center max-w-2xl mx-auto">
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Integrated Library Services</h2>
+                        <p class="text-sm text-slate-500 mt-2">Comprehensive features for both students and library administrators</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                            <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl font-bold">
+                                <i class="fa-solid fa-book-bookmark"></i>
+                            </div>
+                            <h3 class="font-extrabold text-slate-900 text-lg">Automated Inventory</h3>
+                            <p class="text-xs text-slate-500 leading-relaxed">Real-time shelf tracking, stock adjustments, category tagging, and location shelf assignment.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold">
+                                <i class="fa-solid fa-clock-rotate-left"></i>
+                            </div>
+                            <h3 class="font-extrabold text-slate-900 text-lg">Borrow & Return Engine</h3>
+                            <p class="text-xs text-slate-500 leading-relaxed">Track active checkouts, issue dates, due dates, loan extensions, and automated late return fee computation ($0.50/day).</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold">
+                                <i class="fa-solid fa-user-shield"></i>
+                            </div>
+                            <h3 class="font-extrabold text-slate-900 text-lg">Dual Role Dashboards</h3>
+                            <p class="text-xs text-slate-500 leading-relaxed">Dedicated User Dashboard for student profile, balance, and borrowings, paired with a full Admin control suite.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        let books = [];
+        let patrons = [];
+
+        function updatePublicStats() {
+            const totalTitles = books.length;
+            const available = books.reduce((acc, b) => acc + parseInt(b.availableCopies || 0), 0);
+            const titlesEl = document.getElementById('public-stat-titles');
+            const availableEl = document.getElementById('public-stat-available');
+            const patronsEl = document.getElementById('public-stat-patrons');
+
+            if (titlesEl) titlesEl.textContent = totalTitles;
+            if (availableEl) availableEl.textContent = available;
+            if (patronsEl) patronsEl.textContent = patrons.length;
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+        }
+
+        function renderPublicCatalog() {
+            const grid = document.getElementById('public-books-grid');
+            if (!grid) return;
+
+            const searchVal = (document.getElementById('public-hero-search-input')?.value || '').toLowerCase();
+            const categoryVal = document.getElementById('public-category-filter')?.value || 'ALL';
+            grid.innerHTML = '';
+
+            const filtered = books.filter((b) => {
+                const matchesSearch = !searchVal || b.title.toLowerCase().includes(searchVal) || b.author.toLowerCase().includes(searchVal) || b.isbn.toLowerCase().includes(searchVal);
+                const matchesCat = categoryVal === 'ALL' || b.category === categoryVal;
+                return matchesSearch && matchesCat;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="col-span-full p-8 text-center text-slate-400 font-semibold">No books match your search parameters.</div>';
+                return;
+            }
+
+            filtered.forEach((b) => {
+                const card = document.createElement('div');
+                const isAvailable = (b.availableCopies || 0) > 0;
+                card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between';
+                card.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="w-full h-36 bg-slate-100 rounded-xl flex items-center justify-center text-indigo-400 border border-slate-200 text-3xl">
+                            <i class="fa-solid fa-book"></i>
+                        </div>
+                        <div>
+                            <span class="text-[11px] font-bold text-indigo-600 uppercase tracking-wider">${escapeHtml(b.category)}</span>
+                            <h4 class="font-extrabold text-slate-900 text-base leading-snug line-clamp-1 mt-0.5">${escapeHtml(b.title)}</h4>
+                            <p class="text-xs text-slate-500">${escapeHtml(b.author)}</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                        <span class="font-semibold text-slate-500 font-mono">${escapeHtml(b.shelf)}</span>
+                        <span class="font-bold ${isAvailable ? 'text-emerald-600' : 'text-rose-500'}">${isAvailable ? (b.availableCopies || 0) + ' Copies Left' : 'Out of Stock'}</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function executePublicSearch() {
+            renderPublicCatalog();
+            document.getElementById('public-catalog-section')?.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showPublicView(section) {
+            if (section === 'catalog') {
+                document.getElementById('public-catalog-section')?.scrollIntoView({ behavior: 'smooth' });
+            } else if (section === 'services') {
+                document.getElementById('services-section')?.scrollIntoView({ behavior: 'smooth' });
+            } else if (section === 'hero') {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        async function loadPublicCatalog() {
+            try {
+                const bookResponse = await fetch('/api/books');
+                books = await bookResponse.json();
+                patrons = [];
+            } catch (error) {
+                books = [];
+                patrons = [];
+            }
+            updatePublicStats();
+            renderPublicCatalog();
+        }
+
+        document.addEventListener('DOMContentLoaded', loadPublicCatalog);
+    </script>
+{{> footer }}

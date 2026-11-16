@@ -1,0 +1,426 @@
+{{> head}}
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LibraTrack — Student & Member Library Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Fraunces:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            serif: ['Fraunces', 'serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body data-user-id="{{ user.id }}" data-user-name="{{ user.name }}" class="bg-[#FAF9F6] text-stone-800 font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- Toast Notification -->
+  <div id="toast-box" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Member Top Navbar -->
+  <header class="bg-white/90 backdrop-blur-md border-b border-stone-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-emerald-700 text-white font-serif font-bold text-xl flex items-center justify-center shadow-xs">
+          L
+        </div>
+        <div>
+          <span class="font-serif text-xl font-bold text-stone-900 tracking-tight">LibraTrack</span>
+          <span class="ml-2 text-[11px] font-semibold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
+            Member Portal
+          </span>
+        </div>
+      </div>
+
+      <nav class="flex items-center gap-2">
+        <button onclick="switchPage('explore')" id="nav-explore" class="px-4 py-2 rounded-full text-sm font-semibold bg-stone-900 text-white transition">
+          Explore Books
+        </button>
+        <button onclick="switchPage('account')" id="nav-account" class="px-4 py-2 rounded-full text-sm font-semibold text-stone-600 hover:bg-stone-100 transition flex items-center gap-2">
+          <span>My Books & Holds</span>
+          <span id="member-badge" class="bg-emerald-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+        </button>
+      </nav>
+
+      <div class="hidden sm:flex items-center gap-2.5 pl-4 border-l border-stone-200">
+        <div class="text-right">
+          <p class="text-xs font-bold text-stone-900" id="patron-name-display">{{ user.name }}</p>
+          <p class="text-[11px] font-mono text-stone-500" id="patron-id-display">ID: {{ user.id }}</p>
+        </div>
+        <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center">
+          MC
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- PAGE 1: EXPLORE CATALOG -->
+  <main id="page-explore" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Hero Search Section -->
+    <div class="bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 rounded-3xl p-8 sm:p-10 text-white shadow-lg mb-8">
+      <div class="max-w-2xl">
+        <span class="text-xs font-mono uppercase tracking-widest text-emerald-300">Digital Library Catalog</span>
+        <h1 class="font-serif text-3xl sm:text-4xl font-bold mt-2 leading-tight">
+          Find your next reference, textbook, or classic read.
+        </h1>
+        <p class="text-emerald-100/85 text-sm mt-2">
+          Search real-time shelf availability and reserve books online for instant pickup at the library counter.
+        </p>
+      </div>
+
+      <div class="mt-6 bg-white p-2 rounded-2xl shadow-md flex flex-col sm:flex-row gap-2 text-stone-800">
+        <input type="text" id="search-input" oninput="renderCatalog()" placeholder="Search title, author, ISBN, or topic..." class="flex-1 px-4 py-2.5 text-sm rounded-xl focus:outline-none">
+        <select id="category-select" onchange="renderCatalog()" class="bg-stone-100 border border-stone-200 rounded-xl px-4 py-2.5 text-sm font-medium text-stone-700 focus:outline-none">
+          <option value="All">All Subjects</option>
+          <option value="Computer Science">Computer Science</option>
+          <option value="Engineering">Engineering</option>
+          <option value="Literature">Literature</option>
+          <option value="History">History</option>
+        </select>
+        <select id="availability-select" onchange="renderCatalog()" class="bg-stone-100 border border-stone-200 rounded-xl px-4 py-2.5 text-sm font-medium text-stone-700 focus:outline-none">
+          <option value="All">All Status</option>
+          <option value="Available">Available Only</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Results Header -->
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="font-serif text-xl font-bold text-stone-900">Catalog Collection</h2>
+      <span id="results-label" class="text-xs font-medium text-stone-500">Loading books...</span>
+    </div>
+
+    <!-- Book Cards Grid -->
+    <div id="catalog-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+  </main>
+
+  <!-- PAGE 2: MY BORROWED BOOKS & RESERVATION HOLDS -->
+  <main id="page-account" class="hidden flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div>
+      <h1 class="font-serif text-2xl font-bold text-stone-900">My Library Activity</h1>
+      <p class="text-sm text-stone-500">Reservation requests sent here are synced directly to the Librarian Admin System.</p>
+    </div>
+
+    <!-- Pending Holds -->
+    <section class="bg-white rounded-2xl border border-stone-200 p-6 shadow-xs">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-bold text-stone-900 text-base">Reservation Hold Requests</h2>
+        <span class="text-xs font-mono text-stone-400">Endpoint: GET /api/member/holds</span>
+      </div>
+      <div id="my-holds-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </section>
+
+    <!-- Active Borrowed Books -->
+    <section class="bg-white rounded-2xl border border-stone-200 p-6 shadow-xs">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-bold text-stone-900 text-base">Currently Borrowed Books</h2>
+        <span class="text-xs font-mono text-stone-400">Endpoint: GET /api/member/loans</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="border-b border-stone-200 text-xs uppercase text-stone-400">
+              <th class="py-3 px-3">Book Title</th>
+              <th class="py-3 px-3">Date Borrowed</th>
+              <th class="py-3 px-3">Due Date</th>
+              <th class="py-3 px-3">Status</th>
+            </tr>
+          </thead>
+          <tbody id="my-loans-tbody" class="divide-y divide-stone-100"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Hold Request Modal -->
+  <div id="reserve-modal" class="fixed inset-0 bg-stone-950/60 backdrop-blur-xs z-40 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-stone-200">
+      <span id="modal-cat" class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700">Category</span>
+      <h3 id="modal-title" class="font-serif text-xl font-bold text-stone-900 mt-3">Book Title</h3>
+      <p id="modal-author" class="text-sm text-stone-500">Author</p>
+
+      <div class="mt-4 bg-stone-50 rounded-xl p-4 border border-stone-200 text-xs space-y-2">
+        <div class="flex justify-between">
+          <span class="text-stone-500">Call / Shelf Number</span>
+          <span id="modal-shelf" class="font-mono font-bold text-stone-900"></span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-stone-500">ISBN</span>
+          <span id="modal-isbn" class="font-mono text-stone-700"></span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-stone-500">Copies Available</span>
+          <span id="modal-avail" class="font-bold text-emerald-700"></span>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <label class="block text-xs font-semibold text-stone-700 mb-1">Pickup Schedule / Note for Librarian</label>
+        <input type="text" id="pickup-note" placeholder="e.g., Will claim before 4:00 PM today" class="w-full border border-stone-300 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:border-emerald-600">
+      </div>
+
+      <div class="mt-6 flex justify-end gap-2">
+        <button onclick="closeModal()" class="px-4 py-2 rounded-xl text-sm font-semibold text-stone-600 hover:bg-stone-100">Cancel</button>
+        <button onclick="submitHoldRequest()" class="px-5 py-2 rounded-xl text-sm font-semibold bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs">
+          Confirm Reservation
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * INTEGRATION LAYER (Replace localStorage calls with fetch() to your backend API)
+     */
+    const API_CONFIG = {
+      STORAGE_BOOKS: 'lt_integrated_books',
+      STORAGE_HOLDS: 'lt_integrated_holds',
+      STORAGE_LOANS: 'lt_integrated_loans',
+      MEMBER: {
+        id: document.body.dataset.userId || 'MEM-2026-001',
+        name: document.body.dataset.userName || 'Signed in user'
+      }
+    };
+
+    const SEED_BOOKS = [
+      { id: 101, title: 'Clean Code: Agile Software Craftsmanship', author: 'Robert C. Martin', isbn: '978-0132350884', category: 'Computer Science', shelf: 'CS-101-A', total: 5, available: 3, accent: 'from-emerald-700 to-teal-900' },
+      { id: 102, title: 'Designing Data-Intensive Applications', author: 'Martin Kleppmann', isbn: '978-1449373320', category: 'Computer Science', shelf: 'CS-204-B', total: 4, available: 2, accent: 'from-slate-700 to-slate-900' },
+      { id: 103, title: 'Introduction to Algorithms (CLRS)', author: 'Thomas H. Cormen', isbn: '978-0262046305', category: 'Computer Science', shelf: 'CS-105-A', total: 3, available: 0, accent: 'from-amber-700 to-orange-900' },
+      { id: 104, title: 'Noli Me Tángere', author: 'José Rizal', isbn: '978-0143039693', category: 'Literature', shelf: 'LIT-012-C', total: 8, available: 6, accent: 'from-stone-700 to-stone-900' },
+      { id: 105, title: 'The Pragmatic Programmer', author: 'Andrew Hunt & David Thomas', isbn: '978-0135957059', category: 'Computer Science', shelf: 'CS-110-A', total: 4, available: 4, accent: 'from-teal-700 to-emerald-950' },
+      { id: 106, title: 'Structures: Why Things Don\'t Fall Down', author: 'J.E. Gordon', isbn: '978-0306812835', category: 'Engineering', shelf: 'ENG-301-D', total: 3, available: 2, accent: 'from-cyan-800 to-slate-900' }
+    ];
+
+    const MEMBER_HOLDS_SEED = [
+      { holdId: 'HLD-1001', bookId: 101, bookTitle: 'Clean Code: Agile Software Craftsmanship', shelf: 'CS-101-A', memberId: 'MEM-2026-001', memberName: 'Library Member One', note: 'Counter pickup', createdAt: '2026-11-17', status: 'Pending' },
+      { holdId: 'HLD-1002', bookId: 104, bookTitle: 'Noli Me Tángere', shelf: 'LIT-012-C', memberId: 'MEM-2026-001', memberName: 'Library Member One', note: 'Pickup after 2 PM', createdAt: '2026-11-17', status: 'Pending' }
+    ];
+
+    const MEMBER_LOANS_SEED = [
+      { loanId: 'LOAN-501', bookId: 102, bookTitle: 'Designing Data-Intensive Applications', memberId: 'MEM-2026-001', memberName: 'Library Member One', borrowDate: '2026-10-14', dueDate: '2026-10-28', status: 'Borrowed' }
+    ];
+
+    const MemberApiService = {
+      getBooks() {
+        let data = JSON.parse(localStorage.getItem(API_CONFIG.STORAGE_BOOKS));
+        if (!data) {
+          localStorage.setItem(API_CONFIG.STORAGE_BOOKS, JSON.stringify(SEED_BOOKS));
+          data = SEED_BOOKS;
+        }
+        return data;
+      },
+      getHolds() {
+        let data = JSON.parse(localStorage.getItem(API_CONFIG.STORAGE_HOLDS));
+        if (!data) {
+          localStorage.setItem(API_CONFIG.STORAGE_HOLDS, JSON.stringify(MEMBER_HOLDS_SEED));
+          data = MEMBER_HOLDS_SEED;
+        }
+        return data;
+      },
+      getLoans() {
+        let data = JSON.parse(localStorage.getItem(API_CONFIG.STORAGE_LOANS));
+        if (!data) {
+          localStorage.setItem(API_CONFIG.STORAGE_LOANS, JSON.stringify(MEMBER_LOANS_SEED));
+          data = MEMBER_LOANS_SEED;
+        }
+        return data;
+      },
+      createHold(payload) {
+        // Equivalent to: POST /api/holds
+        const holds = this.getHolds();
+        holds.unshift(payload);
+        localStorage.setItem(API_CONFIG.STORAGE_HOLDS, JSON.stringify(holds));
+        return payload;
+      },
+      cancelHold(holdId) {
+        // Equivalent to: DELETE /api/holds/:id
+        const holds = this.getHolds().filter(h => h.holdId !== holdId);
+        localStorage.setItem(API_CONFIG.STORAGE_HOLDS, JSON.stringify(holds));
+      }
+    };
+
+    let activeBook = null;
+
+    // Auto-sync if Admin System makes changes in another browser tab
+    window.addEventListener('storage', () => {
+      renderCatalog();
+      renderAccount();
+    });
+
+    function notify(msg) {
+      const box = document.getElementById('toast-box');
+      const el = document.createElement('div');
+      el.className = 'pointer-events-auto bg-stone-900 text-white px-4 py-3 rounded-xl shadow-lg text-xs font-semibold border-l-4 border-emerald-500';
+      el.textContent = msg;
+      box.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }
+
+    function switchPage(page) {
+      document.getElementById('page-explore').classList.toggle('hidden', page !== 'explore');
+      document.getElementById('page-account').classList.toggle('hidden', page !== 'account');
+
+      document.getElementById('nav-explore').className = page === 'explore'
+        ? 'px-4 py-2 rounded-full text-sm font-semibold bg-stone-900 text-white transition'
+        : 'px-4 py-2 rounded-full text-sm font-semibold text-stone-600 hover:bg-stone-100 transition';
+
+      document.getElementById('nav-account').className = page === 'account'
+        ? 'px-4 py-2 rounded-full text-sm font-semibold bg-stone-900 text-white transition flex items-center gap-2'
+        : 'px-4 py-2 rounded-full text-sm font-semibold text-stone-600 hover:bg-stone-100 transition flex items-center gap-2';
+
+      if (page === 'account') renderAccount();
+    }
+
+    function renderCatalog() {
+      const books = MemberApiService.getBooks();
+      const holds = MemberApiService.getHolds();
+      const q = document.getElementById('search-input').value.toLowerCase();
+      const cat = document.getElementById('category-select').value;
+      const avail = document.getElementById('availability-select').value;
+
+      const filtered = books.filter(b =>
+        (b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q) || b.isbn.includes(q)) &&
+        (cat === 'All' || b.category === cat) &&
+        (avail === 'All' || b.available > 0)
+      );
+
+      document.getElementById('results-label').textContent = `${filtered.length} books found`;
+
+      document.getElementById('catalog-grid').innerHTML = filtered.map(b => {
+        const isAvailable = b.available > 0;
+        const hasPending = holds.some(h => h.bookId === b.id && h.memberId === API_CONFIG.MEMBER.id && h.status === 'Pending');
+
+        return `
+          <div class="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-xs hover:shadow-md transition flex flex-col">
+            <div class="bg-gradient-to-br ${b.accent || 'from-emerald-700 to-teal-900'} p-5 text-white">
+              <span class="text-[10px] font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">${b.category}</span>
+              <h3 class="font-serif font-bold text-lg mt-3 leading-snug line-clamp-2">${b.title}</h3>
+              <p class="text-xs text-white/80 mt-1">${b.author}</p>
+            </div>
+            <div class="p-4 flex-1 flex flex-col justify-between space-y-4">
+              <div class="space-y-1.5 text-xs">
+                <div class="flex justify-between">
+                  <span class="text-stone-400">Shelf Location</span>
+                  <span class="font-mono font-semibold text-stone-800">${b.shelf}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-stone-400">Status</span>
+                  <span class="font-semibold ${isAvailable ? 'text-emerald-700' : 'text-amber-600'}">
+                    ${isAvailable ? `${b.available} / ${b.total} on shelf` : 'Waitlist Only'}
+                  </span>
+                </div>
+              </div>
+              ${hasPending
+                ? `<button disabled class="w-full py-2.5 rounded-xl bg-stone-100 text-stone-400 text-xs font-bold cursor-not-allowed">Hold Requested</button>`
+                : `<button onclick="openModal(${b.id})" class="w-full py-2.5 rounded-xl ${isAvailable ? 'bg-emerald-700 hover:bg-emerald-800 text-white' : 'bg-amber-500 hover:bg-amber-600 text-stone-950'} text-xs font-bold transition">
+                    ${isAvailable ? 'Reserve for Pickup' : 'Request Waitlist Hold'}
+                  </button>`
+              }
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      updateBadge();
+    }
+
+    function openModal(bookId) {
+      activeBook = MemberApiService.getBooks().find(b => b.id === bookId);
+      if (!activeBook) return;
+
+      document.getElementById('modal-cat').textContent = activeBook.category;
+      document.getElementById('modal-title').textContent = activeBook.title;
+      document.getElementById('modal-author').textContent = activeBook.author;
+      document.getElementById('modal-shelf').textContent = activeBook.shelf;
+      document.getElementById('modal-isbn').textContent = activeBook.isbn;
+      document.getElementById('modal-avail').textContent = `${activeBook.available} of ${activeBook.total} copies`;
+      document.getElementById('pickup-note').value = '';
+
+      const m = document.getElementById('reserve-modal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function closeModal() {
+      const m = document.getElementById('reserve-modal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    function submitHoldRequest() {
+      if (!activeBook) return;
+      const holdRecord = {
+        holdId: 'HLD-' + Math.floor(1000 + Math.random() * 9000),
+        bookId: activeBook.id,
+        bookTitle: activeBook.title,
+        shelf: activeBook.shelf,
+        memberId: API_CONFIG.MEMBER.id,
+        memberName: API_CONFIG.MEMBER.name,
+        note: document.getElementById('pickup-note').value.trim() || 'Counter pickup',
+        createdAt: new Date().toISOString().split('T')[0],
+        status: 'Pending'
+      };
+
+      MemberApiService.createHold(holdRecord);
+      closeModal();
+      renderCatalog();
+      renderAccount();
+      notify(`Reservation ${holdRecord.holdId} sent to Librarian Desk!`);
+    }
+
+    function cancelMyHold(holdId) {
+      MemberApiService.cancelHold(holdId);
+      renderCatalog();
+      renderAccount();
+      notify('Reservation cancelled.');
+    }
+
+    function renderAccount() {
+      const holds = MemberApiService.getHolds().filter(h => h.memberId === API_CONFIG.MEMBER.id);
+      const loans = MemberApiService.getLoans().filter(l => l.memberId === API_CONFIG.MEMBER.id && l.status === 'Borrowed');
+
+      document.getElementById('my-holds-container').innerHTML = holds.length
+        ? holds.map(h => `
+          <div class="p-4 rounded-xl border border-stone-200 bg-stone-50 flex items-center justify-between gap-3">
+            <div>
+              <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">${h.holdId} &bull; ${h.status}</span>
+              <h4 class="font-bold text-stone-900 text-sm mt-1">${h.bookTitle}</h4>
+              <p class="text-xs text-stone-500">Shelf: <span class="font-mono">${h.shelf}</span> &bull; ${h.createdAt}</p>
+            </div>
+            ${h.status === 'Pending' ? `<button onclick="cancelMyHold('${h.holdId}')" class="text-xs font-semibold text-rose-600 hover:underline">Cancel</button>` : ''}
+          </div>
+        `).join('')
+        : `<p class="text-xs text-stone-400 col-span-2">No reservation holds yet.</p>`;
+
+      document.getElementById('my-loans-tbody').innerHTML = loans.length
+        ? loans.map(l => `
+          <tr>
+            <td class="py-3 px-3 font-semibold text-stone-900">${l.bookTitle}</td>
+            <td class="py-3 px-3 font-mono text-xs text-stone-500">${l.borrowDate}</td>
+            <td class="py-3 px-3 font-mono text-xs font-bold text-amber-700">${l.dueDate}</td>
+            <td class="py-3 px-3"><span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">${l.status}</span></td>
+          </tr>
+        `).join('')
+        : `<tr><td colspan="4" class="py-6 text-center text-xs text-stone-400">No active borrowed books.</td></tr>`;
+
+      updateBadge();
+    }
+
+    function updateBadge() {
+      const holds = MemberApiService.getHolds().filter(h => h.memberId === API_CONFIG.MEMBER.id && h.status === 'Pending').length;
+      const loans = MemberApiService.getLoans().filter(l => l.memberId === API_CONFIG.MEMBER.id && l.status === 'Borrowed').length;
+      document.getElementById('member-badge').textContent = holds + loans;
+    }
+
+    renderCatalog();
+    renderAccount();
+  </script>
+</body>
+{{> footer}}
