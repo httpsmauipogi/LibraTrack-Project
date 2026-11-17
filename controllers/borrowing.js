@@ -42,18 +42,21 @@ export const borrowing = {
 
   returnItem: async (req, res) => {
     if (!req.session.userId) return res.redirect("/login");
+    const user = await User.findByPk(req.session.userId);
+    const isStaff = user && (user.role === "admin" || user.role === "staff");
+    const redirect = isStaff ? "/admin/borrowings" : "/borrowings";
     const borrowing = await Borrowing.findByPk(req.params.id, { include: [{ model: Book, as: "book" }] });
     if (!borrowing) {
       req.flash("error_msg", "Borrowing record not found.");
-      return res.redirect("/borrowings");
+      return res.redirect(redirect);
     }
-    if (borrowing.userId !== req.session.userId) {
+    if (!isStaff && borrowing.userId !== req.session.userId) {
       req.flash("error_msg", "You can only return your own borrowings.");
-      return res.redirect("/borrowings");
+      return res.redirect(redirect);
     }
     if (borrowing.status !== "active") {
       req.flash("error_msg", "Only active borrowings can be returned.");
-      return res.redirect("/borrowings");
+      return res.redirect(redirect);
     }
     const transaction = await sequelize.transaction();
     try {
@@ -68,9 +71,9 @@ export const borrowing = {
       req.flash("success_msg", "Book returned successfully.");
     } catch (err) {
       await transaction.rollback();
-      req.flash("error_msg", "Failed to return book.");
+req.flash("error_msg", "Failed to return book.");
     }
-    res.redirect("/borrowings");
+    res.redirect(redirect);
   },
 
   manage: async (req, res) => {

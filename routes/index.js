@@ -21,11 +21,12 @@ router.get("/logout", logoutUser);
 // Library catalog
 router.get("/books", book.index);
 router.get("/books/:id", book.show);
-router.post("/books/:id/borrow", requireAuth, book.borrow);
+router.post("/books/:id/borrow", requireAuth, requireRole("member"), book.borrow);
 
 // My borrowings
-router.get("/borrowings", requireAuth, borrowing.myBorrowings);
-router.post("/borrowings/:id/return", requireAuth, borrowing.returnItem);
+  router.get("/borrowings", requireAuth, requireRole("member"), borrowing.myBorrowings);
+  router.post("/borrowings/:id/return", requireAuth, requireRole("member"), borrowing.returnItem);
+  router.post("/admin/borrowings/:id/return", requireAuth, requireRole("admin", "staff"), borrowing.returnItem);
 
 // Admin: borrowings management
 router.get("/admin/borrowings", requireAuth, requireRole("admin", "staff"), borrowing.manage);

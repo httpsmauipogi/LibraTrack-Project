@@ -3,14 +3,18 @@
     <div class="flex justify-between h-16">
       <div class="flex items-center gap-8">
         <a href="/" class="flex items-center gap-2">
-          <span class="text-2xl font-bold text-indigo-600">BetLog</span>
+          <span class="text-2xl font-bold text-indigo-600">LibraTrack</span>
           <span class="hidden sm:inline text-sm font-medium text-gray-500">Library</span>
         </a>
         <div class="hidden md:flex items-center gap-6 text-sm">
           <a href="/books" class="text-gray-600 hover:text-indigo-600 {{#if (eq currentPath '/books')}}text-indigo-600 font-medium{{/if}}">Catalog</a>
           {{#if user}}
-            <a href="/borrowings" class="text-gray-600 hover:text-indigo-600 {{#if (eq currentPath '/borrowings')}}text-indigo-600 font-medium{{/if}}">My Borrowings</a>
-            <a href="/dashboard" class="text-gray-600 hover:text-indigo-600 {{#if (eq currentPath '/dashboard')}}text-indigo-600 font-medium{{/if}}">Dashboard</a>
+            {{#if (or (eq user.role "admin") (eq user.role "staff"))}}
+              <a href="/admin/books" class="hidden sm:inline px-3 py-2 text-sm text-gray-600 hover:text-indigo-600 {{#if (eq currentPath '/admin/books')}}text-indigo-600 font-medium{{/if}}">Manage Books</a>
+            {{else}}
+              <a href="/borrowings" class="hidden sm:inline px-3 py-2 text-sm text-gray-600 hover:text-indigo-600 {{#if (eq currentPath '/borrowings')}}text-indigo-600 font-medium{{/if}}">My Borrowings</a>
+            {{/if}}
+            <a href="/dashboard" class="hidden sm:inline px-3 py-2 text-sm text-gray-600 hover:text-indigo-600 {{#if (eq currentPath '/dashboard')}}text-indigo-600 font-medium{{/if}}">Dashboard</a>
           {{/if}}
         </div>
       </div>
@@ -38,10 +42,11 @@
                 <span class="inline-block mt-1 px-2 py-0.5 text-xs rounded bg-indigo-50 text-indigo-700 capitalize">{{user.role}}</span>
               </div>
               <a href="/dashboard" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Dashboard</a>
-              <a href="/borrowings" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">My Borrowings</a>
               {{#if (or (eq user.role "admin") (eq user.role "staff"))}}
                 <a href="/admin/books" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Manage Books</a>
                 <a href="/admin/borrowings" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Manage Borrowings</a>
+              {{else}}
+                <a href="/borrowings" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">My Borrowings</a>
               {{/if}}
               <a href="/logout" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-50">Logout</a>
             </div>

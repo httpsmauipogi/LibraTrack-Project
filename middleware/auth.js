@@ -43,13 +43,13 @@ export const requireRole = (...roles) => {
       const user = await User.findByPk(req.session.userId);
       if (!user || !roles.includes(user.role)) {
         req.flash("error_msg", "You do not have permission to access this page.");
-        return res.redirect("/dashboard");
+        return res.redirect("/login");
       }
       req.user = user;
       next();
     } catch (err) {
       req.flash("error_msg", "Unable to verify your role.");
-      return res.redirect("/dashboard");
+      return res.redirect("/login");
     }
   };
 };

@@ -1,11 +1,11 @@
-# BetLog — Borrowing and Return Web System
+# LibraTrack — Library Borrow & Return Web System
 
-XianFire Framework project built with Express, Sequelize, MySQL, and Tailwind CSS. A web system for borrowing and returning items with role-based access (Admin, Staff, Visitor).
+XianFire Framework project built with Express, Sequelize, MySQL, and Tailwind CSS. A web system for borrowing and returning books with role-based access (Admin, Staff, Member).
 
 ## Features
 
 - User authentication (login/register/logout) with role-based access
-- Item catalog with availability tracking
+- Book catalog with availability tracking
 - Borrow request submission (pending → approved → active → returned)
 - Admin/Staff borrowing management (approve/reject requests)
 - User borrowing history with return functionality
@@ -82,16 +82,16 @@ betlog/
    ```
 
 3. **Configure the database**
-   - Start MySQL (e.g., Laragon)
-   - Create a database named `betlog`
-   - Update `models/db.js` if your MySQL credentials differ:
-     ```js
-     export const sequelize = new Sequelize("betlog", "root", "", {
-       host: "localhost",
-       port: 3306,
-       dialect: "mysql"
-     });
-     ```
+- Start MySQL (e.g., Laragon)
+- Create a database named `betlog`
+- Update `models/db.js` if your MySQL credentials differ:
+  ```js
+  export const sequelize = new Sequelize("betlog", "root", "", {
+    host: "localhost",
+    port: 3306,
+    dialect: "mysql"
+  });
+  ```
 
 4. **Run the server**
    ```bash
@@ -111,9 +111,9 @@ Seed the database first (run `seed.mjs` or manually insert), then log in:
 
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | admin@betlog.edu | admin123 |
+| Admin | malabhajayar@gmail.com | admin123 |
 | Staff | staff@betlog.edu | staff123 |
-| Visitor | visitor@betlog.edu | visitor123 |
+| Member | member@betlog.edu | member123 |
 
 ## Routes
 
@@ -124,22 +124,22 @@ Seed the database first (run `seed.mjs` or manually insert), then log in:
 | `/register` | GET/POST | Register | Public |
 | `/dashboard` | GET | User dashboard | Auth |
 | `/logout` | GET | Logout | Auth |
-| `/items` | GET | Item catalog | Public |
-| `/items/:id` | GET | Item detail | Public |
-| `/items/:id/borrow` | POST | Submit borrow request | Auth |
+| `/books` | GET | Library catalog | Public |
+| `/books/:id` | GET | Book detail | Public |
+| `/books/:id/borrow` | POST | Submit borrow request | Auth |
 | `/borrowings` | GET | My borrowings | Auth |
-| `/borrowings/:id/return` | POST | Return an item | Auth (owner) |
+| `/borrowings/:id/return` | POST | Return a book | Auth (owner) |
 | `/admin/borrowings` | GET | Manage all borrowings | Admin/Staff |
 | `/admin/borrowings/:id/approve` | POST | Approve request | Admin/Staff |
 | `/admin/borrowings/:id/reject` | POST | Reject request | Admin/Staff |
 
 ## Borrowing Flow
 
-1. Visitor browses `/items` and clicks **Borrow** on an available item
+1. Member browses `/books` and clicks **Borrow** on an available book
 2. Request is created with status `pending`
 3. Admin/Staff reviews at `/admin/borrowings` and clicks **Approve** or **Reject**
-4. Approved requests become `active` with a 7-day due date; item stock decreases
-5. Visitor returns the item at `/borrowings` → status becomes `returned`; stock restored
+4. Approved requests become `active` with a 7-day due date; book copies decrease
+5. Member returns the book at `/borrowings` → status becomes `returned`; copies restored
 
 ## Available Scripts
 

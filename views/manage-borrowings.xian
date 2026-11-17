@@ -35,14 +35,14 @@
               <td class="px-6 py-4 text-sm text-gray-500">{{date this.returnDate}}</td>
               <td class="px-6 py-4 text-right">
                 {{#if (eq this.status 'pending')}}
-                  <form method="POST" action="/admin/borrowings/{{this.id}}/approve" onsubmit="return confirm('Approve this borrowing request?')" class="inline mr-2">
-                    <button type="submit" class="bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-green-700">Approve</button>
+                  <form method="POST" action="/admin/borrowings/{{this.id}}/approve" onsubmit="return confirm('Approve this borrowing request?')" class="inline">
+                    <button type="submit" class="bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-green-700">Accept</button>
                   </form>
                   <form method="POST" action="/admin/borrowings/{{this.id}}/reject" onsubmit="return confirm('Reject this borrowing request?')" class="inline">
                     <button type="submit" class="bg-red-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-red-700">Reject</button>
                   </form>
-                {{else if (eq this.status 'active')}}
-                  <form method="POST" action="/borrowings/{{this.id}}/return" class="inline">
+{{else if (eq this.status 'active')}}
+                  <form method="POST" action="/admin/borrowings/{{this.id}}/return" class="inline">
                     <button type="submit" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-indigo-700">Mark Returned</button>
                   </form>
                 {{else}}

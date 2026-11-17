@@ -1,11 +1,2 @@
-<footer class="bg-white border-t border-gray-100 mt-16">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-    <div>
-      <span class="text-lg font-bold text-blue-600">BetLog</span>
-      <span class="text-sm text-gray-500 ml-2">Borrow &amp; Return System</span>
-    </div>
-    <p class="text-xs text-gray-400">&copy; 2026 XianFire Framework — Mindoro State University</p>
-  </div>
-</footer>
 </body>
 </html>
