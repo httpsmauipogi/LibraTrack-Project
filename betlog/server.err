@@ -1,0 +1,19 @@
+(node:16332) [DEP0044] DeprecationWarning: The `util.isArray` API is deprecated. Please use `Array.isArray()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+andle [as _listen2] (node:net:2324:16)
+    at listenInCluster (node:net:2433:12)
+    at Server.listen (node:net:2558:7)
+    at app.listen (C:\Users\jayrm\betlog\node_modules\express\lib\application.js:635:24)
+    at file:///C:/Users/jayrm/betlog/index.js:133:24
+    at new Promise (<anonymous>)
+    at startServer (file:///C:/Users/jayrm/betlog/index.js:132:10)
+    at file:///C:/Users/jayrm/betlog/index.js:147:3
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 3001
+}
+
+Node.js v24.20.0

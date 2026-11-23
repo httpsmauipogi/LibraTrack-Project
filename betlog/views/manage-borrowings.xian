@@ -1,0 +1,63 @@
+{{> head}}
+<body class="bg-gray-50">
+{{> navbar}}
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Borrowing Management</h1>
+    <span class="text-sm text-gray-500">{{borrowings.length}} record{{#if (ne borrowings.length 1)}}s{{/if}}</span>
+  </div>
+
+  {{#if borrowings.length}}
+    <div class="bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
+      <table class="w-full divide-y divide-gray-100">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Member</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Book</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Borrowed</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Due Date</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Returned</th>
+            <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {{#each borrowings}}
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 text-sm text-gray-700">{{this.user.name}}</td>
+              <td class="px-6 py-4 text-sm font-medium text-gray-900">{{this.book.title}}</td>
+              <td class="px-6 py-4">
+                <span class="px-2 py-0.5 text-xs font-medium rounded capitalize {{#if (eq this.status 'active')}}bg-indigo-100 text-indigo-700{{else if (eq this.status 'pending')}}bg-amber-100 text-amber-700{{else if (eq this.status 'returned')}}bg-green-100 text-green-700{{else if (eq this.status 'overdue')}}bg-red-100 text-red-700{{else if (eq this.status 'rejected')}}bg-gray-100 text-gray-700{{else}}bg-gray-100 text-gray-700{{/if}}">{{this.status}}</span>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-500">{{date this.borrowDate}}</td>
+              <td class="px-6 py-4 text-sm text-gray-500">{{date this.dueDate}}</td>
+              <td class="px-6 py-4 text-sm text-gray-500">{{date this.returnDate}}</td>
+              <td class="px-6 py-4 text-right">
+                {{#if (eq this.status 'pending')}}
+                  <form method="POST" action="/admin/borrowings/{{this.id}}/approve" onsubmit="return confirm('Approve this borrowing request?')" class="inline">
+                    <button type="submit" class="bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-green-700">Accept</button>
+                  </form>
+                  <form method="POST" action="/admin/borrowings/{{this.id}}/reject" onsubmit="return confirm('Reject this borrowing request?')" class="inline">
+                    <button type="submit" class="bg-red-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-red-700">Reject</button>
+                  </form>
+{{else if (eq this.status 'active')}}
+                  <form method="POST" action="/admin/borrowings/{{this.id}}/return" class="inline">
+                    <button type="submit" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-indigo-700">Mark Returned</button>
+                  </form>
+                {{else}}
+                  <span class="text-xs text-gray-400">-</span>
+                {{/if}}
+              </td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+  {{else}}
+    <div class="text-center py-20 bg-white rounded-xl border border-gray-100">
+      <p class="text-gray-500 text-lg">No borrowing records.</p>
+    </div>
+  {{/if}}
+</div>
+{{> footer}}
