@@ -1,2 +1,9 @@
 node_modules/
 .env
+libratrack/data/*.db
+catalog/data/*.db
+betlog/data/*.db
+data/*.db
+shared/.sso_secret
+
+shared/.sso_secret

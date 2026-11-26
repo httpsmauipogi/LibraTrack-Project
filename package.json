@@ -1,0 +1,15 @@
+{
+  "name": "libratrack-system",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "LibraTrack system-wide admin and test tooling",
+  "scripts": {
+    "admin:sync": "node scripts/sync-admin.mjs",
+    "db:share": "node scripts/migrate-shared-db.mjs",
+    "test:all": "npm --prefix libratrack test && npm --prefix catalog test && npm --prefix betlog test"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.0"
+  }
+}
