@@ -1,680 +1,499 @@
 {{> head }}
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{title}}</title>
+<body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col">
+{{> navbar}}
+
+<main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Page heading -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-extrabold text-slate-900">Catalog Administration</h1>
+      <p class="text-sm text-slate-500 mt-1">
+        Catalog administrator <span class="font-semibold text-slate-700">{{adminUser.name}}</span>
+        <span class="lt-badge bg-indigo-50 text-indigo-700 capitalize ml-1">{{adminUser.role}}</span>
+      </p>
+    </div>
+    <button onclick="startNewBookEntry()" class="lt-btn shrink-0">
+      <i class="fa-solid fa-plus"></i> Add New Book
+    </button>
+  </div>
+
+  <!-- Tabs -->
+  <nav class="flex flex-wrap gap-1 rounded-2xl bg-white border border-slate-200 shadow-card p-1.5">
+    <button onclick="switchAdminTab('overview')" id="admin-nav-overview" class="admin-nav-item flex-1 min-w-[140px] rounded-xl px-4 py-2.5 text-sm font-bold bg-indigo-600 text-white shadow-sm transition-colors">
+      <i class="fa-solid fa-chart-pie mr-2"></i>Overview
+    </button>
+    <button onclick="switchAdminTab('inventory')" id="admin-nav-inventory" class="admin-nav-item flex-1 min-w-[140px] rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors">
+      <i class="fa-solid fa-books mr-2"></i>Book Inventory
+    </button>
+    <button onclick="switchAdminTab('borrowed')" id="admin-nav-borrowed" class="admin-nav-item flex-1 min-w-[140px] rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors">
+      <i class="fa-solid fa-right-left mr-2"></i>Borrow Logs
+      <span id="admin-badge-pending" class="ml-1.5 hidden rounded-full bg-amber-100 text-amber-700 text-xs px-2 py-0.5">0</span>
+      <span id="admin-badge-overdue" class="ml-1.5 hidden rounded-full bg-rose-100 text-rose-700 text-xs px-2 py-0.5">0</span>
+    </button>
+  </nav>
+
+  <!-- OVERVIEW -->
+  <section id="admin-tab-overview" class="admin-tab-content space-y-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="lt-card p-5">
+        <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Total Inventory</p>
+        <p id="admin-stat-total-books" class="text-3xl font-extrabold text-slate-900 mt-2">0</p>
+        <p class="text-xs text-slate-500 mt-1">Cataloged physical copies</p>
+      </div>
+      <div class="lt-card p-5">
+        <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Active Borrowings</p>
+        <p id="admin-stat-active-loans" class="text-3xl font-extrabold text-indigo-600 mt-2">0</p>
+        <p class="text-xs text-slate-500 mt-1">Currently checked out</p>
+      </div>
+      <div class="lt-card p-5">
+        <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Overdue Items</p>
+        <p id="admin-stat-overdue" class="text-3xl font-extrabold text-rose-600 mt-2">0</p>
+        <p class="text-xs text-slate-500 mt-1">Require immediate return</p>
+      </div>
+      <div class="lt-card p-5">
+        <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Accrued Fines</p>
+        <p id="admin-stat-total-fines" class="text-3xl font-extrabold text-amber-600 mt-2">₱0.00</p>
+        <p class="text-xs text-slate-500 mt-1">₱0.50 per day late</p>
+      </div>
+    </div>
+
+    <div class="rounded-2xl bg-gradient-to-r from-libra-deep via-indigo-800 to-indigo-600 p-6 text-white shadow-lift">
+      <p class="text-xs font-bold uppercase tracking-[0.18em] text-indigo-200">Operations pulse</p>
+      <h2 class="mt-2 text-2xl font-extrabold">Welcome back, {{adminUser.name}}</h2>
+      <p class="mt-1 text-sm text-indigo-100/90">Review circulation history, process returns, and keep the shared catalog up to date.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lt-card p-6 space-y-4">
+        <h3 class="font-extrabold text-slate-900">Quick Actions</h3>
+        <button onclick="startNewBookEntry()" class="w-full text-left rounded-xl border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/50 p-3 text-sm font-bold text-slate-800 flex items-center justify-between transition-colors">
+          <span><i class="fa-solid fa-plus text-indigo-600 mr-2"></i> Add New Book Title</span>
+          <i class="fa-solid fa-chevron-right text-slate-400"></i>
+        </button>
+        <button onclick="switchAdminTab('borrowed')" class="w-full text-left rounded-xl border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/50 p-3 text-sm font-bold text-slate-800 flex items-center justify-between transition-colors">
+          <span><i class="fa-solid fa-rotate-left text-indigo-600 mr-2"></i> Process Returns</span>
+          <i class="fa-solid fa-chevron-right text-slate-400"></i>
+        </button>
+      </div>
+
+      <div class="lt-card p-6 space-y-4 lg:col-span-2">
+        <h3 class="font-extrabold text-slate-900">Recent Circulation</h3>
+        <div id="admin-recent-feed" class="space-y-3 max-h-[260px] overflow-y-auto custom-scrollbar">
+          <!-- Populated from /api/loans -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INVENTORY -->
+  <section id="admin-tab-inventory" class="admin-tab-content hidden space-y-5">
+    <div class="lt-card p-4 flex flex-col md:flex-row justify-between gap-4">
+      <div class="relative w-full md:w-96">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input type="text" id="admin-inventory-search" oninput="renderAdminInventoryTable()" placeholder="Search title, author, or ISBN..." class="lt-input pl-10">
+      </div>
+    </div>
+
+    <div class="lt-card overflow-hidden">
+      <div class="overflow-x-auto custom-scrollbar">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50 text-slate-500 text-xs font-extrabold uppercase border-b border-slate-200">
+              <th class="py-3.5 px-4">Book Title &amp; Author</th>
+              <th class="py-3.5 px-4">ISBN</th>
+              <th class="py-3.5 px-4">Category</th>
+              <th class="py-3.5 px-4 text-center">Shelf</th>
+              <th class="py-3.5 px-4 text-center">Total Copies</th>
+              <th class="py-3.5 px-4 text-center">Available</th>
+              <th class="py-3.5 px-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="admin-inventory-tbody" class="divide-y divide-slate-100 text-sm">
+            <!-- Populated from /api/books -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- BORROW LOGS -->
+  <section id="admin-tab-borrowed" class="admin-tab-content hidden space-y-5">
+    <div class="lt-card p-4">
+      <div class="relative w-full md:w-96">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input type="text" id="admin-borrowed-search" oninput="renderAdminBorrowedTable()" placeholder="Search borrower or book..." class="lt-input pl-10">
+      </div>
+    </div>
+
+    <div class="lt-card overflow-hidden">
+      <div class="overflow-x-auto custom-scrollbar">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50 text-slate-500 text-xs font-extrabold uppercase border-b border-slate-200">
+              <th class="py-3.5 px-4">ID</th>
+              <th class="py-3.5 px-4">Book Title</th>
+              <th class="py-3.5 px-4">Borrower</th>
+              <th class="py-3.5 px-4">Issued</th>
+              <th class="py-3.5 px-4">Due</th>
+              <th class="py-3.5 px-4 text-center">Status</th>
+              <th class="py-3.5 px-4 text-center">Fine</th>
+              <th class="py-3.5 px-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="admin-borrowed-tbody" class="divide-y divide-slate-100 text-sm">
+            <!-- Populated from /api/loans -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- MODAL: ADD / EDIT BOOK -->
+<div id="modal-add-book" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200">
+    <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+      <h3 id="modal-book-title" class="font-extrabold text-slate-900">Add New Book Record</h3>
+      <button onclick="closeModal('modal-add-book')" class="text-slate-400 hover:text-slate-700" aria-label="Close">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+    </div>
+    <form id="form-add-book" onsubmit="saveBookRecord(event)" class="p-6 space-y-4">
+      <input type="hidden" id="book-edit-id">
+      <div>
+        <label class="lt-label" for="book-title-input">Book Title *</label>
+        <input type="text" id="book-title-input" required class="lt-input">
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="lt-label" for="book-author-input">Author *</label>
+          <input type="text" id="book-author-input" required class="lt-input">
+        </div>
+        <div>
+          <label class="lt-label" for="book-isbn-input">ISBN *</label>
+          <input type="text" id="book-isbn-input" required class="lt-input">
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="lt-label" for="book-category-input">Category *</label>
+          <select id="book-category-input" required class="lt-input">
+            <option value="Science & Tech">Science & Tech</option>
+            <option value="Fiction">Fiction</option>
+            <option value="History">History</option>
+            <option value="Biography">Biography</option>
+          </select>
+        </div>
+        <div>
+          <label class="lt-label" for="book-shelf-input">Shelf Location *</label>
+          <input type="text" id="book-shelf-input" placeholder="e.g. Rack A-1" required class="lt-input">
+        </div>
+      </div>
+      <div>
+        <label class="lt-label" for="book-quantity-input">Copies *</label>
+        <input type="number" id="book-quantity-input" min="1" value="4" required class="lt-input">
+      </div>
+      <div class="pt-4 border-t border-slate-200 flex justify-end gap-3">
+        <button type="button" onclick="closeModal('modal-add-book')" class="lt-btn-ghost">Cancel</button>
+        <button type="submit" class="lt-btn">Save Book</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
-    tailwind.config = {
-        theme: {
-            extend: {
-                fontFamily: { sans: ['Inter', 'sans-serif'] },
-                colors: {
-                    libra: {
-                        deep: '#1e1b4b',
-                        accent: '#4f46e5',
-                        accentHover: '#4338ca',
-                        lightBg: '#f8fafc'
-                    }
-                }
-            }
-        }
+  let books = [];
+  let transactions = [];
+  const todayStr = new Date().toISOString().split('T')[0];
+  const finePerDay = 0.5;
+
+  const apiRequest = async (url, options = {}) => {
+    const response = await fetch(url, {
+      ...options,
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'The request could not be completed.');
+    return data;
+  };
+
+  const refreshLibraryViews = async () => {
+    try {
+      [books, transactions] = await Promise.all([
+        apiRequest('/api/books'),
+        apiRequest('/api/loans')
+      ]);
+      renderAdminDashboard();
+    } catch (error) {
+      showToast(error.message);
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', refreshLibraryViews);
+
+  function switchAdminTab(tabKey) {
+    document.querySelectorAll('.admin-nav-item').forEach(el => {
+      el.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm');
+      el.classList.add('text-slate-500', 'hover:text-slate-900', 'hover:bg-slate-50');
+    });
+    const activeNav = document.getElementById(`admin-nav-${tabKey}`);
+    if (activeNav) {
+      activeNav.classList.add('bg-indigo-600', 'text-white', 'shadow-sm');
+      activeNav.classList.remove('text-slate-500');
+    }
+    document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden'));
+    document.getElementById(`admin-tab-${tabKey}`)?.classList.remove('hidden');
+  }
+
+  function renderAdminDashboard() {
+    const totalCopies = books.reduce((acc, b) => acc + (parseInt(b.totalCopies) || 0), 0);
+    const active = transactions.filter(loan => loan.isActiveLoan);
+    const pending = transactions.filter(loan => ['PENDING', 'APPROVED'].includes(loan.statusLabel));
+    const overdue = active.filter(loan => loan.dueDate && loan.dueDate < todayStr);
+    const totalFines = overdue.reduce((sum, loan) => {
+      const daysLate = Math.ceil((new Date(todayStr) - new Date(loan.dueDate)) / 86400000);
+      return sum + Math.max(0, daysLate) * finePerDay;
+    }, 0);
+
+    document.getElementById('admin-stat-total-books').textContent = totalCopies;
+    document.getElementById('admin-stat-active-loans').textContent = active.length;
+    document.getElementById('admin-stat-overdue').textContent = overdue.length;
+    document.getElementById('admin-stat-total-fines').textContent = `₱${totalFines.toFixed(2)}`;
+
+    const pendingBadge = document.getElementById('admin-badge-pending');
+    pendingBadge.textContent = pending.length;
+    pendingBadge.classList.toggle('hidden', pending.length === 0);
+
+    const overdueBadge = document.getElementById('admin-badge-overdue');
+    overdueBadge.textContent = overdue.length;
+    overdueBadge.classList.toggle('hidden', overdue.length === 0);
+
+    renderAdminRecentFeed();
+    renderAdminInventoryTable();
+    renderAdminBorrowedTable();
+  }
+
+  function renderAdminRecentFeed() {
+    const feed = document.getElementById('admin-recent-feed');
+    feed.innerHTML = '';
+    const recent = transactions.slice(0, 5);
+
+    if (recent.length === 0) {
+      feed.innerHTML = '<p class="py-6 text-center text-sm text-slate-400">No circulation records yet.</p>';
+      return;
+    }
+
+    recent.forEach(loan => {
+      const status = loan.statusLabel || 'PENDING';
+      const tone = status === 'RETURNED'
+        ? 'bg-emerald-50 text-emerald-700'
+        : status === 'OVERDUE' || status === 'REJECTED'
+          ? 'bg-rose-50 text-rose-700'
+          : status === 'ACTIVE'
+            ? 'bg-indigo-50 text-indigo-700'
+            : 'bg-amber-50 text-amber-700';
+      const item = document.createElement('div');
+      item.className = 'flex items-center justify-between gap-3 rounded-xl bg-slate-50 border border-slate-100 p-3 text-xs';
+      item.innerHTML = `
+        <div class="min-w-0">
+          <p class="font-bold text-slate-900 truncate">${escapeHtml(loan.Book?.title || 'Book')}</p>
+          <p class="text-slate-500">Borrower: ${escapeHtml(loan.User?.name || 'Unknown')}</p>
+        </div>
+        <span class="lt-badge shrink-0 ${tone}">${escapeHtml(status)}</span>
+      `;
+      feed.appendChild(item);
+    });
+  }
+
+  function renderAdminInventoryTable() {
+    const tbody = document.getElementById('admin-inventory-tbody');
+    const searchVal = (document.getElementById('admin-inventory-search').value || '').toLowerCase();
+    tbody.innerHTML = '';
+
+    const filtered = books.filter(b =>
+      [b.title, b.author, b.isbn].some(field => String(field || '').toLowerCase().includes(searchVal))
+    );
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400">No books in inventory. Use “Add New Book” to add titles.</td></tr>';
+      return;
+    }
+
+    filtered.forEach(b => {
+      const tr = document.createElement('tr');
+      tr.className = 'border-b border-slate-100 hover:bg-slate-50';
+      tr.innerHTML = `
+        <td class="py-3 px-4 font-bold text-slate-900">${escapeHtml(b.title)} <span class="block text-xs text-slate-400 font-normal">${escapeHtml(b.author)}</span></td>
+        <td class="py-3 px-4 text-xs text-slate-600">${escapeHtml(b.isbn)}</td>
+        <td class="py-3 px-4"><span class="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">${escapeHtml(b.category)}</span></td>
+        <td class="py-3 px-4 text-center text-xs font-semibold text-slate-600">${escapeHtml(b.shelf)}</td>
+        <td class="py-3 px-4 text-center font-bold text-slate-800">${b.totalCopies}</td>
+        <td class="py-3 px-4 text-center font-bold ${b.availableCopies > 0 ? 'text-indigo-600' : 'text-rose-600'}">${b.availableCopies}</td>
+        <td class="py-3 px-4 text-right whitespace-nowrap">
+          <button onclick="editAdminBook('${b.id}')" class="p-1.5 text-slate-400 hover:text-indigo-600" aria-label="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
+          <button onclick="deleteAdminBook('${b.id}')" class="p-1.5 text-slate-400 hover:text-rose-600" aria-label="Delete"><i class="fa-solid fa-trash-can"></i></button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function startNewBookEntry() {
+    document.getElementById('form-add-book').reset();
+    document.getElementById('book-edit-id').value = '';
+    document.getElementById('book-title-input').value = '';
+    document.getElementById('book-author-input').value = '';
+    document.getElementById('book-isbn-input').value = '';
+    document.getElementById('book-shelf-input').value = '';
+    document.getElementById('book-quantity-input').value = '4';
+    document.getElementById('modal-book-title').textContent = 'Add New Book Record';
+    openModal('modal-add-book');
+  }
+
+  function editAdminBook(id) {
+    const book = books.find(b => String(b.id) === String(id));
+    if (!book) return;
+    document.getElementById('modal-book-title').textContent = 'Edit Book Details';
+    document.getElementById('book-edit-id').value = book.id;
+    document.getElementById('book-title-input').value = book.title;
+    document.getElementById('book-author-input').value = book.author;
+    document.getElementById('book-isbn-input').value = book.isbn;
+    document.getElementById('book-category-input').value = book.category;
+    document.getElementById('book-shelf-input').value = book.shelf;
+    document.getElementById('book-quantity-input').value = book.totalCopies;
+    openModal('modal-add-book');
+  }
+
+  async function deleteAdminBook(id) {
+    try {
+      await apiRequest(`/api/books/${id}`, { method: 'DELETE' });
+      showToast('Book removed from the catalog');
+      await refreshLibraryViews();
+    } catch (error) {
+      showToast(error.message);
+    }
+  }
+
+  async function saveBookRecord(event) {
+    event.preventDefault();
+    const editId = document.getElementById('book-edit-id').value;
+    const payload = {
+      title: document.getElementById('book-title-input').value.trim(),
+      author: document.getElementById('book-author-input').value.trim(),
+      isbn: document.getElementById('book-isbn-input').value.trim(),
+      category: document.getElementById('book-category-input').value,
+      shelf: document.getElementById('book-shelf-input').value.trim(),
+      quantity: document.getElementById('book-quantity-input').value
     };
+
+    try {
+      await apiRequest(editId ? `/api/books/${editId}` : '/api/books', {
+        method: editId ? 'PUT' : 'POST',
+        body: JSON.stringify(payload)
+      });
+      showToast(editId ? 'Book updated' : `Added "${payload.title}" to inventory`);
+      closeModal('modal-add-book');
+      await refreshLibraryViews();
+    } catch (error) {
+      showToast(error.message);
+    }
+  }
+
+  function renderAdminBorrowedTable() {
+    const tbody = document.getElementById('admin-borrowed-tbody');
+    const searchVal = (document.getElementById('admin-borrowed-search').value || '').toLowerCase();
+    tbody.innerHTML = '';
+
+    const filtered = transactions.filter(loan => {
+      const haystack = [
+        loan.Book?.title, loan.User?.name, loan.User?.email, loan.statusLabel
+      ].join(' ').toLowerCase();
+      return haystack.includes(searchVal);
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="p-8 text-center text-slate-400">No borrowing records found.</td></tr>';
+      return;
+    }
+
+    filtered.forEach(loan => {
+      const status = loan.statusLabel || 'PENDING';
+      const returned = status === 'RETURNED';
+      const daysLate = loan.dueDate
+        ? Math.max(0, Math.ceil((new Date(todayStr) - new Date(loan.dueDate)) / 86400000))
+        : 0;
+      const overdue = loan.isActiveLoan && daysLate > 0;
+      const fine = overdue ? daysLate * finePerDay : 0;
+      const tone = returned
+        ? 'bg-slate-100 text-slate-600'
+        : overdue || status === 'REJECTED'
+          ? 'bg-rose-50 text-rose-700'
+          : status === 'ACTIVE'
+            ? 'bg-indigo-50 text-indigo-700'
+            : 'bg-amber-50 text-amber-700';
+
+      let action;
+      if (loan.isActiveLoan) {
+        action = `<button onclick="processAdminReturn(${Number(loan.id)})" class="rounded-lg bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white shadow-sm">Process Return</button>`;
+      } else if (status === 'PENDING' || status === 'APPROVED') {
+        action = `<a href="http://localhost:3000/admin/requests" class="text-xs font-semibold text-indigo-600 hover:underline">Review in Admin Console</a>`;
+      } else {
+        action = `<span class="text-xs text-slate-400">${returned ? `Returned ${escapeHtml(String(loan.returnedAt || '').slice(0, 10))}` : 'Closed'}</span>`;
+      }
+
+      const tr = document.createElement('tr');
+      tr.className = 'border-b border-slate-100 hover:bg-slate-50';
+      tr.innerHTML = `
+        <td class="py-3 px-4 text-xs font-bold text-slate-500">${loan.id}</td>
+        <td class="py-3 px-4 font-bold text-slate-900">${escapeHtml(loan.Book?.title || 'Book removed')}</td>
+        <td class="py-3 px-4 font-semibold text-slate-700">${escapeHtml(loan.User?.name || 'Unknown')}<span class="block text-xs text-slate-400 font-normal">${escapeHtml(loan.User?.email || '')}</span></td>
+        <td class="py-3 px-4 text-xs text-slate-500">${escapeHtml(String(loan.borrowDate || loan.createdAt || '').slice(0, 10))}</td>
+        <td class="py-3 px-4 text-xs font-semibold text-slate-700">${escapeHtml(loan.dueDate || '—')}</td>
+        <td class="py-3 px-4 text-center"><span class="lt-badge ${tone}">${escapeHtml(status)}</span></td>
+        <td class="py-3 px-4 text-center text-xs font-bold ${overdue ? 'text-rose-600' : 'text-slate-400'}">₱${fine.toFixed(2)}</td>
+        <td class="py-3 px-4 text-right whitespace-nowrap">${action}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function processAdminReturn(loanId) {
+    try {
+      await apiRequest(`/api/loans/${loanId}/return`, { method: 'POST' });
+      showToast('Return processed successfully');
+      await refreshLibraryViews();
+    } catch (error) {
+      showToast(error.message);
+    }
+  }
+
+  function openModal(id) {
+    document.getElementById(id).classList.remove('hidden');
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.add('hidden');
+  }
+
+  function showToast(message) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'pointer-events-auto rounded-xl bg-slate-900 text-white text-xs font-bold px-4 py-3 shadow-xl border border-white/10 flex items-center gap-2 transition-all duration-300 opacity-0 translate-y-2';
+    toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> ${escapeHtml(message)}`;
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.remove('opacity-0', 'translate-y-2'));
+    setTimeout(() => {
+      toast.classList.add('opacity-0', 'translate-y-2');
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, m => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[m]);
+  }
 </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 3px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-        .view-section {
-            display: none;
-        }
-        .view-section.active-view {
-            display: flex;
-        }
-    </style>
-</head>
-<body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col custom-scrollbar">
-<div id="view-admin-dashboard" class="view-section active-view flex-1 flex h-screen overflow-hidden bg-slate-100">
-    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
-        <!-- Admin Sidebar -->
-        <aside class="w-72 bg-slate-950 text-slate-300 flex flex-col shrink-0 border-r border-slate-800">
-            <div class="h-20 flex items-center px-6 bg-slate-900 justify-between border-b border-slate-800">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-extrabold text-xl shadow-lg">
-                        <i class="fa-solid fa-shield-halved"></i>
-                    </div>
-                    <div>
-                        <h1 class="font-bold text-white leading-tight text-base">Admin Portal</h1>
-                        <span class="text-[11px] text-indigo-400 font-semibold block">Full System Access</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Nav Links -->
-            <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-                <div class="px-3 pb-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Management</div>
-
-                <a href="#" onclick="switchAdminTab('overview'); return false" id="admin-nav-overview" class="admin-nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white shadow-sm">
-                    <i class="fa-solid fa-chart-pie w-5 text-center"></i>
-                    <span>System Overview</span>
-                </a>
-                <a href="#" onclick="switchAdminTab('inventory'); return false" id="admin-nav-inventory" class="admin-nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
-                    <i class="fa-solid fa-books w-5 text-center"></i>
-                    <span>Book Inventory Catalog</span>
-                </a>
-                <a href="#" onclick="switchAdminTab('borrowed'); return false" id="admin-nav-borrowed" class="admin-nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
-                    <i class="fa-solid fa-right-left w-5 text-center"></i>
-                    <span>Borrowed & Return Logs</span>
-                    <span id="admin-badge-overdue" class="ml-auto bg-rose-500/20 text-rose-300 text-xs px-2 py-0.5 rounded-full font-bold hidden">0</span>
-                </a>
-            </nav>
-
-            <!-- Admin Footer -->
-            <div class="p-4 border-t border-slate-800 bg-slate-900 flex items-center justify-between">
-                <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-300 font-bold text-xs flex items-center justify-center border border-indigo-500/30">
-                        {{adminInitials}}
-                    </div>
-                    <div class="min-w-0">
-                        <p class="text-xs font-bold text-white truncate">{{adminUser.name}}</p>
-                        <p class="text-[10px] text-slate-400 truncate">{{adminUser.email}}</p>
-                    </div>
-                </div>
-                <a href="/logout" class="text-slate-400 hover:text-rose-400 p-2 text-sm" title="Logout">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                </a>
-            </div>
-        </aside>
-
-        <!-- Admin Workspace -->
-        <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-            <!-- Header -->
-            <header class="min-h-20 bg-slate-900 text-white px-6 py-3 flex items-center justify-between border-b border-slate-800 shadow-md">
-                <div>
-                    <h2 class="text-lg font-bold flex items-center gap-2">
-                        <span>LibraTrack Admin Workspace</span>
-                        <span class="text-xs font-semibold px-2 py-0.5 bg-indigo-600 text-white border border-indigo-400 rounded-full">System Administrator</span>
-                    </h2>
-                    <p class="text-xs text-slate-300">Full management control for catalog, checkouts, returns, and financial balances</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <a href="/logout" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow">
-                        Logout
-                    </a>
-                </div>
-            </header>
-
-            <main class="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-6">
-
-                <!-- ADMIN TAB 1: OVERVIEW -->
-                <section id="admin-tab-overview" class="admin-tab-content space-y-6">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                            <span class="text-xs font-bold text-slate-400 uppercase">Total Inventory</span>
-                            <h3 id="admin-stat-total-books" class="text-3xl font-extrabold text-slate-900 mt-2">0</h3>
-                            <p class="text-xs text-slate-500 mt-1">Cataloged physical copies</p>
-                        </div>
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                            <span class="text-xs font-bold text-slate-400 uppercase">Active Borrowings</span>
-                            <h3 id="admin-stat-active-loans" class="text-3xl font-extrabold text-amber-600 mt-2">0</h3>
-                            <p class="text-xs text-slate-500 mt-1">Checked out by students</p>
-                        </div>
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                            <span class="text-xs font-bold text-slate-400 uppercase">Overdue Items</span>
-                            <h3 id="admin-stat-overdue" class="text-3xl font-extrabold text-rose-600 mt-2">0</h3>
-                            <p class="text-xs text-rose-500 mt-1">Requires immediate return</p>
-                        </div>
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                            <span class="text-xs font-bold text-slate-400 uppercase">Total Accrued Fines</span>
-                            <h3 id="admin-stat-total-fines" class="text-3xl font-extrabold text-indigo-600 mt-2">₱0.00</h3>
-                            <p class="text-xs text-slate-500 mt-1">Student penalty balance</p>
-                        </div>
-                    </div>
-
-                    <div class="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-500 rounded-2xl p-5 text-white shadow-lg border border-indigo-400/30">
-                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                            <div>
-                                <p class="text-xs font-bold uppercase tracking-[0.18em] text-indigo-100">Operations pulse</p>
-                                <h3 class="mt-2 text-2xl font-extrabold">Welcome back, {{adminUser.name}}</h3>
-                                <p class="mt-1 text-sm text-indigo-100/90">Review circulation history, process returns, and keep the catalog up to date.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                            <h3 class="font-extrabold text-slate-900 text-base">Quick Admin Actions</h3>
-                            <div class="space-y-3">
-                                <button onclick="startNewBookEntry()" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/50 transition-all font-bold text-xs text-slate-800 flex items-center justify-between">
-                                    <span><i class="fa-solid fa-plus text-indigo-600 mr-2"></i> Add New Book Title</span>
-                                    <i class="fa-solid fa-chevron-right text-slate-400"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                            <h3 class="font-extrabold text-slate-900 text-base">Recent Circulation Feed</h3>
-                            <div id="admin-recent-feed" class="space-y-3 max-h-[260px] overflow-y-auto custom-scrollbar">
-                                <!-- Dynamic -->
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- ADMIN TAB 2: INVENTORY -->
-                <section id="admin-tab-inventory" class="admin-tab-content hidden space-y-6">
-                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between gap-4">
-                        <div class="relative w-full md:w-96">
-                            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                            <input type="text" id="admin-inventory-search" oninput="renderAdminInventoryTable()" placeholder="Search title, author, or ISBN..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                        </div>
-                        <button onclick="startNewBookEntry()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all shadow flex items-center gap-2">
-                            <i class="fa-solid fa-plus"></i> Add New Book
-                        </button>
-                    </div>
-
-                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div class="overflow-x-auto custom-scrollbar">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="bg-slate-50 text-slate-500 text-xs font-extrabold uppercase border-b border-slate-200">
-                                        <th class="py-3.5 px-4">Book Title & Author</th>
-                                        <th class="py-3.5 px-4">ISBN</th>
-                                        <th class="py-3.5 px-4">Category</th>
-                                        <th class="py-3.5 px-4 text-center">Shelf</th>
-                                        <th class="py-3.5 px-4 text-center">Total Copies</th>
-                                        <th class="py-3.5 px-4 text-center">Available</th>
-                                        <th class="py-3.5 px-4 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="admin-inventory-tbody" class="divide-y divide-slate-100 text-sm">
-                                    <!-- Dynamic -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- ADMIN TAB 3: BORROWED & RETURN LOGS -->
-                <section id="admin-tab-borrowed" class="admin-tab-content hidden space-y-6">
-                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between gap-4">
-                        <div class="relative w-full md:w-96">
-                            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                            <input type="text" id="admin-borrowed-search" oninput="renderAdminBorrowedTable()" placeholder="Search transactions by student or book..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div class="overflow-x-auto custom-scrollbar">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="bg-slate-50 text-slate-500 text-xs font-extrabold uppercase border-b border-slate-200">
-                                        <th class="py-3.5 px-4">TRX ID</th>
-                                        <th class="py-3.5 px-4">Book Title</th>
-                                        <th class="py-3.5 px-4">Student Name</th>
-                                        <th class="py-3.5 px-4">Issue Date</th>
-                                        <th class="py-3.5 px-4">Due Date</th>
-                                        <th class="py-3.5 px-4 text-center">Status</th>
-                                        <th class="py-3.5 px-4 text-center">Fine Rate</th>
-                                        <th class="py-3.5 px-4 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="admin-borrowed-tbody" class="divide-y divide-slate-100 text-sm">
-                                    <!-- Dynamic -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-
-            </main>
-        </div>
-    </div>
-
-    <!-- ================= MODALS ================= -->
-
-    <!-- LOGIN MODAL -->
-    <div id="modal-login" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100">
-            <div class="bg-libra-deep text-white p-6 text-center relative">
-                <button onclick="closeModal('modal-login')" class="absolute right-4 top-4 text-indigo-300 hover:text-white">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-                <div class="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl font-bold mx-auto mb-2 shadow-lg">
-                    <i class="fa-solid fa-right-to-bracket"></i>
-                </div>
-                <h3 class="font-extrabold text-xl">System Portal Authentication</h3>
-                <p class="text-xs text-indigo-200 mt-1">Select account type to enter dashboard workspace</p>
-            </div>
-
-            <div class="p-6 space-y-5">
-                <!-- Role Selector -->
-                <div class="flex rounded-xl bg-slate-100 p-1 font-bold text-xs">
-                    <button type="button" id="role-btn-user" onclick="setLoginRole('user')" class="flex-1 py-2.5 rounded-lg text-indigo-700 bg-white shadow-sm transition-all text-center">
-                        <i class="fa-solid fa-user mr-1.5"></i> Student / User
-                    </button>
-                    <button type="button" id="role-btn-admin" onclick="setLoginRole('admin')" class="flex-1 py-2.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all text-center">
-                        <i class="fa-solid fa-shield-halved mr-1.5"></i> Admin / Staff
-                    </button>
-                </div>
-
-                <!-- Form -->
-                <form id="form-login" onsubmit="handleLoginSubmit(event)" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Email Address</label>
-                        <input type="email" id="login-email" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Password</label>
-                        <input type="password" id="login-password" value="••••••••" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                    </div>
-
-                    <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all shadow-lg">
-                        Login & Open Dashboard
-                    </button>
-                </form>
-
-                <!-- Quick Fill Buttons -->
-                <div class="pt-4 border-t border-slate-100 text-center space-y-2">
-                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Quick Demo Credentials</p>
-                    <div class="flex gap-2">
-                        <button type="button" onclick="quickFillLogin('user')" class="flex-1 py-2 bg-slate-100 hover:bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all">
-                            Demo User
-                        </button>
-                        <button type="button" onclick="quickFillLogin('admin')" class="flex-1 py-2 bg-slate-100 hover:bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all">
-                            Demo Admin
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL: ADD / EDIT BOOK (ADMIN) -->
-    <div id="modal-add-book" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                <h3 id="modal-book-title" class="font-extrabold text-slate-900 text-base">Add New Book Record</h3>
-                <button onclick="closeModal('modal-add-book')" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-            <form id="form-add-book" onsubmit="saveBookRecord(event)" class="p-6 space-y-4">
-                <input type="hidden" id="book-edit-id">
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Book Title *</label>
-                    <input type="text" id="book-title-input" required class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Author *</label>
-                        <input type="text" id="book-author-input" required class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">ISBN Code *</label>
-                        <input type="text" id="book-isbn-input" required class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Category *</label>
-                        <select id="book-category-input" required class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm">
-                            <option value="Science & Tech">Science & Tech</option>
-                            <option value="Fiction">Fiction</option>
-                            <option value="History">History</option>
-                            <option value="Biography">Biography</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Shelf Location *</label>
-                        <input type="text" id="book-shelf-input" required placeholder="e.g. Rack A-1" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Total Quantity Copies *</label>
-                    <input type="number" id="book-quantity-input" min="1" value="4" required class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm">
-                </div>
-                <div class="pt-4 border-t border-slate-100 flex justify-end gap-3">
-                    <button type="button" onclick="closeModal('modal-add-book')" class="px-4 py-2 border rounded-xl text-sm font-semibold">Cancel</button>
-                    <button type="submit" class="px-5 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow">Save Book</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- ================= JAVASCRIPT APPLICATION LOGIC ================= -->
-    <script>
-        // --- GLOBAL DATA STORE ---
-        let books = [];
-
-        const todayStr = new Date().toISOString().split('T')[0];
-
-        let transactions = [];
-
-        const apiRequest = async (url, options = {}) => {
-            const response = await fetch(url, {
-                ...options,
-                headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
-            });
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(data.error || 'The request could not be completed.');
-            return data;
-        };
-
-        const refreshLibraryViews = async () => {
-            try {
-                [books, transactions] = await Promise.all([
-                    apiRequest('/api/books'),
-                    apiRequest('/api/loans')
-                ]);
-                renderAdminDashboard();
-            } catch (error) {
-                showToast(error.message);
-            }
-        };
-
-        // --- INIT APP ---
-        document.addEventListener('DOMContentLoaded', () => {
-            refreshLibraryViews();
-        });
-
-        // --- NAVIGATION ---
-        function showView(viewId) {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active-view'));
-            const target = document.getElementById(viewId);
-            if (target) target.classList.add('active-view');
-
-            if (viewId === 'view-admin-dashboard') {
-                renderAdminDashboard();
-            } else if (viewId === 'view-home') {
-                renderPublicCatalog();
-                updatePublicStats();
-            }
-        }
-
-        function showPublicView(section) {
-            showView('view-home');
-            if (section === 'catalog') {
-                document.getElementById('public-catalog-section').scrollIntoView({ behavior: 'smooth' });
-            } else if (section === 'services') {
-                document.getElementById('services-section').scrollIntoView({ behavior: 'smooth' });
-            } else {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        }
-
-        // --- PUBLIC HOME LOGIC ---
-        function updatePublicStats() {
-            const totalTitles = books.length;
-            const available = books.reduce((acc, b) => acc + parseInt(b.availableCopies), 0);
-            document.getElementById('public-stat-patrons').textContent = transactions.filter((loan) => loan.status === 'borrowed').length;
-            document.getElementById('public-stat-available').textContent = available;
-        }
-
-        // --- ADMIN DASHBOARD LOGIC ---
-        function switchAdminTab(tabKey) {
-            document.querySelectorAll('.admin-nav-item').forEach(el => {
-                el.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm');
-                el.classList.add('text-slate-400', 'hover:bg-slate-800');
-            });
-            const activeNav = document.getElementById(`admin-nav-${tabKey}`);
-            if (activeNav) {
-                activeNav.classList.add('bg-indigo-600', 'text-white', 'shadow-sm');
-                activeNav.classList.remove('text-slate-400');
-            }
-
-            document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden'));
-            const activeTab = document.getElementById(`admin-tab-${tabKey}`);
-            if (activeTab) activeTab.classList.remove('hidden');
-        }
-
-        function renderAdminDashboard() {
-            // Metrics Calculation
-            const totalCopies = books.reduce((acc, b) => acc + parseInt(b.totalCopies), 0);
-            const active = transactions.filter((loan) => loan.status === 'borrowed');
-            const overdue = active.filter((loan) => new Date(`${loan.dueDate}T00:00:00`) < new Date(`${todayStr}T00:00:00`));
-            const activeLoans = active.length;
-            const overdueCount = overdue.length;
-            const totalFines = overdue.reduce((sum, loan) => {
-                const daysLate = Math.ceil((new Date(`${todayStr}T00:00:00`) - new Date(`${loan.dueDate}T00:00:00`)) / 86400000);
-                return sum + Math.max(0, daysLate) * 0.5;
-            }, 0);
-
-            document.getElementById('admin-stat-total-books').textContent = totalCopies;
-            document.getElementById('admin-stat-active-loans').textContent = activeLoans;
-            document.getElementById('admin-stat-overdue').textContent = overdueCount;
-            document.getElementById('admin-stat-total-fines').textContent = `₱${totalFines.toFixed(2)}`;
-
-            const overdueBadge = document.getElementById('admin-badge-overdue');
-            if (overdueCount > 0) {
-                overdueBadge.textContent = overdueCount;
-                overdueBadge.classList.remove('hidden');
-            } else {
-                overdueBadge.classList.add('hidden');
-            }
-
-            renderAdminRecentFeed();
-            renderAdminInventoryTable();
-            renderAdminBorrowedTable();
-        }
-
-        function renderAdminRecentFeed() {
-            const feed = document.getElementById('admin-recent-feed');
-            feed.innerHTML = '';
-
-            const sorted = transactions.slice(0, 5);
-            sorted.forEach(t => {
-                const item = document.createElement('div');
-                item.className = "flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs";
-                item.innerHTML = `
-                    <div>
-                        <p class="font-bold text-slate-900">${escapeHtml(t.Book?.title || 'Book')}</p>
-                        <p class="text-slate-500">Student: ${escapeHtml(t.User?.name || 'Unknown borrower')}</p>
-                    </div>
-                    <span class="px-2.5 py-0.5 rounded-full font-bold ${t.status === 'returned' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-                        ${t.status === 'returned' ? 'RETURNED' : 'BORROWED'}
-                    </span>
-                `;
-                feed.appendChild(item);
-            });
-        }
-
-        function renderAdminInventoryTable() {
-            const tbody = document.getElementById('admin-inventory-tbody');
-            const searchVal = (document.getElementById('admin-inventory-search').value || '').toLowerCase();
-            tbody.innerHTML = '';
-
-            const filtered = books.filter(b => b.title.toLowerCase().includes(searchVal) || b.author.toLowerCase().includes(searchVal) || b.isbn.toLowerCase().includes(searchVal));
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400">No books in inventory yet. Use “Add New Book” to add titles to the shared catalog.</td></tr>';
-                return;
-            }
-
-            filtered.forEach(b => {
-                const tr = document.createElement('tr');
-                tr.className = "border-b border-slate-100 hover:bg-slate-50";
-                tr.innerHTML = `
-                    <td class="py-3 px-4 font-bold text-slate-900">${escapeHtml(b.title)} <span class="block text-xs text-slate-400 font-normal">${escapeHtml(b.author)}</span></td>
-                    <td class="py-3 px-4 font-mono text-xs text-slate-600">${escapeHtml(b.isbn)}</td>
-                    <td class="py-3 px-4"><span class="px-2.5 py-1 bg-slate-100 rounded-lg text-xs font-semibold">${escapeHtml(b.category)}</span></td>
-                    <td class="py-3 px-4 text-center font-mono text-xs font-semibold">${escapeHtml(b.shelf)}</td>
-                    <td class="py-3 px-4 text-center font-bold text-slate-800">${b.totalCopies}</td>
-                    <td class="py-3 px-4 text-center font-bold ${b.availableCopies > 0 ? 'text-indigo-600' : 'text-rose-500'}">${b.availableCopies}</td>
-                    <td class="py-3 px-4 text-right">
-                        <button onclick="editAdminBook('${b.id}')" class="p-1.5 text-slate-400 hover:text-indigo-600"><i class="fa-solid fa-pen-to-square"></i></button>
-                        <button onclick="deleteAdminBook('${b.id}')" class="p-1.5 text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function startNewBookEntry() {
-            document.getElementById('form-add-book').reset();
-            document.getElementById('book-edit-id').value = '';
-            document.getElementById('modal-book-title').textContent = 'Add New Book Record';
-            openModal('modal-add-book');
-        }
-
-        function editAdminBook(id) {
-            const book = books.find(b => String(b.id) === String(id));
-            if (!book) return;
-            document.getElementById('modal-book-title').textContent = "Edit Book Details";
-            document.getElementById('book-edit-id').value = book.id;
-            document.getElementById('book-title-input').value = book.title;
-            document.getElementById('book-author-input').value = book.author;
-            document.getElementById('book-isbn-input').value = book.isbn;
-            document.getElementById('book-category-input').value = book.category;
-            document.getElementById('book-shelf-input').value = book.shelf;
-            document.getElementById('book-quantity-input').value = book.totalCopies;
-            openModal('modal-add-book');
-        }
-
-        async function deleteAdminBook(id) {
-            try {
-                await apiRequest(`/api/books/${id}`, { method: 'DELETE' });
-                showToast("Book deleted from catalog");
-                await refreshLibraryViews();
-            } catch (error) {
-                showToast(error.message);
-            }
-        }
-
-        async function saveBookRecord(e) {
-            e.preventDefault();
-            const editId = document.getElementById('book-edit-id').value;
-            const payload = {
-                title: document.getElementById('book-title-input').value.trim(),
-                author: document.getElementById('book-author-input').value.trim(),
-                isbn: document.getElementById('book-isbn-input').value.trim(),
-                category: document.getElementById('book-category-input').value,
-                shelf: document.getElementById('book-shelf-input').value.trim(),
-                quantity: document.getElementById('book-quantity-input').value
-            };
-
-            try {
-                await apiRequest(editId ? `/api/books/${editId}` : '/api/books', {
-                    method: editId ? 'PUT' : 'POST',
-                    body: JSON.stringify(payload)
-                });
-                showToast(editId ? "Updated book entry!" : `Added "${payload.title}" to inventory`);
-                closeModal('modal-add-book');
-                document.getElementById('form-add-book').reset();
-                document.getElementById('book-edit-id').value = '';
-                await refreshLibraryViews();
-            } catch (error) {
-                showToast(error.message);
-            }
-        }
-
-        function renderAdminBorrowedTable() {
-            const tbody = document.getElementById('admin-borrowed-tbody');
-            const searchVal = (document.getElementById('admin-borrowed-search').value || '').toLowerCase();
-            tbody.innerHTML = '';
-
-            const filtered = transactions.filter((loan) => {
-                const title = loan.Book?.title || '';
-                const borrower = loan.User?.name || '';
-                const email = loan.User?.email || '';
-                return `${title} ${borrower} ${email} ${loan.status}`.toLowerCase().includes(searchVal);
-            });
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="p-8 text-center text-slate-400">No borrowing records found.</td></tr>';
-                return;
-            }
-
-            filtered.forEach((loan) => {
-                const isReturned = loan.status === 'returned';
-                const daysLate = Math.max(0, Math.ceil((Date.now() - new Date(`${loan.dueDate}T00:00:00`)) / 86400000));
-                const fine = !isReturned ? daysLate * 0.5 : 0;
-                const isOverdue = !isReturned && daysLate > 0;
-                const status = isReturned ? 'RETURNED' : isOverdue ? 'OVERDUE' : 'BORROWED';
-
-                const tr = document.createElement('tr');
-                tr.className = "border-b border-slate-100 hover:bg-slate-50";
-                tr.innerHTML = `
-                    <td class="py-3 px-4 font-mono text-xs font-bold text-slate-500">${loan.id}</td>
-                    <td class="py-3 px-4 font-bold text-slate-900">${escapeHtml(loan.Book?.title || 'Book removed')}</td>
-                    <td class="py-3 px-4 font-semibold text-slate-700">${escapeHtml(loan.User?.name || 'Unknown borrower')}<span class="block text-xs text-slate-400">${escapeHtml(loan.User?.email || '')}</span></td>
-                    <td class="py-3 px-4 text-xs text-slate-500">${escapeHtml(loan.createdAt?.slice(0, 10) || '')}</td>
-                    <td class="py-3 px-4 text-xs font-semibold text-slate-800">${escapeHtml(loan.dueDate)}</td>
-                    <td class="py-3 px-4 text-center">
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${isReturned ? 'bg-slate-100 text-slate-600' : (isOverdue ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-800')}">
-                            ${status}
-                        </span>
-                    </td>
-                    <td class="py-3 px-4 text-center text-xs font-bold ${isOverdue ? 'text-rose-600' : 'text-slate-400'}">
-                        $${fine.toFixed(2)}
-                    </td>
-                    <td class="py-3 px-4 text-right">
-                        ${!isReturned ? `<button onclick="processAdminReturn(${Number(loan.id)})" class="px-3 py-1 bg-emerald-600 text-white font-bold text-xs rounded-lg shadow">Process Return</button>` : `<span class="text-xs text-slate-400">Returned ${escapeHtml(loan.returnedAt || '')}</span>`}
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        async function processAdminReturn(loanId) {
-            try {
-                await apiRequest(`/api/loans/${loanId}/return`, { method: 'POST' });
-                showToast('Book return processed successfully.');
-                await refreshLibraryViews();
-            } catch (error) {
-                showToast(error.message);
-            }
-        }
-
-        // --- UTILS ---
-        function calculateFine(dueDateStr) {
-            const due = new Date(dueDateStr);
-            const now = new Date(todayStr);
-            const diffTime = now - due;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            if (diffDays > 0) {
-                return { isOverdue: true, daysLate: diffDays, fine: diffDays * 0.50 };
-            }
-            return { isOverdue: false, daysLate: 0, fine: 0 };
-        }
-
-        function openModal(id) {
-            document.getElementById(id).classList.remove('hidden');
-        }
-
-        function closeModal(id) {
-            document.getElementById(id).classList.add('hidden');
-        }
-
-        function showToast(msg) {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = "pointer-events-auto px-4 py-3 bg-slate-900 text-white text-xs font-bold rounded-xl shadow-xl border border-white/10 flex items-center gap-2 transition-all duration-300 opacity-0 translate-y-2";
-            toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> ${escapeHtml(msg)}`;
-            container.appendChild(toast);
-
-            requestAnimationFrame(() => toast.classList.remove('opacity-0', 'translate-y-2'));
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-2');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        function escapeHtml(str) {
-            return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
-        }
-    </script>
 {{> footer }}

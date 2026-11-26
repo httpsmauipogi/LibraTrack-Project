@@ -25,7 +25,14 @@
 
 import { User } from "../models/userModel.js";
 
+// Auth here applies only to member dashboard/borrowing and book-management
+// routes. Borrowed Books and its review actions are permanently public and do
+// not use this middleware. AUTH_REQUIRED=true enforces the remaining areas.
+const authRequired = () =>
+  String(process.env.AUTH_REQUIRED ?? "false").toLowerCase() === "true";
+
 export const requireAuth = (req, res, next) => {
+  if (!authRequired() || req.session.userId) return next();
   if (!req.session.userId) {
     req.flash("error_msg", "Please log in to continue.");
     return res.redirect("/login");
@@ -35,6 +42,7 @@ export const requireAuth = (req, res, next) => {
 
 export const requireRole = (...roles) => {
   return async (req, res, next) => {
+    if (!authRequired()) return next();
     if (!req.session.userId) {
       req.flash("error_msg", "Please log in to continue.");
       return res.redirect("/login");

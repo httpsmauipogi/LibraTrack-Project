@@ -24,23 +24,24 @@
     SOFTWARE.
     */
     
-import crypto from "crypto";
-import { User, sequelize } from "../models/userModel.js";
+import bcrypt from "bcrypt";
+import { User } from "../models/userModel.js";
 import { Book } from "../models/Book.js";
 import { Borrowing } from "../models/Borrowing.js";
-await sequelize.sync();
 
-const hashPassword = (password) => {
-  const salt = crypto.randomBytes(16).toString("hex");
-  const hash = crypto.pbkdf2Sync(password, salt, 100000, 64, "sha512").toString("hex");
-  return `${salt}:${hash}`;
-};
+const SALT_ROUNDS = 10;
+
+// All three LibraTrack apps use bcrypt so one admin identity works everywhere.
+const hashPassword = (password) => bcrypt.hash(String(password || ""), SALT_ROUNDS);
 
 const comparePassword = (password, stored) => {
-  const [salt, hash] = stored.split(":");
-  const compute = crypto.pbkdf2Sync(password, salt, 100000, 64, "sha512").toString("hex");
-  return compute === hash;
+  if (typeof stored !== "string" || !/^\$2[aby]\$/.test(stored)) return Promise.resolve(false);
+  return bcrypt.compare(String(password || ""), stored);
 };
+
+const regenerateSession = (req) => new Promise((resolve, reject) => {
+  req.session.regenerate((error) => (error ? reject(error) : resolve()));
+});
 
 export const loginPage = (req, res) => res.render("login", { title: "Login" });
 export const registerPage = (req, res) => res.render("register", { title: "Register" });
@@ -78,24 +79,71 @@ export const dashboardPage = async (req, res) => {
 };
 
 export const loginUser = async (req, res) => {
-  const { email, password } = req.body;
-  const user = await User.findOne({ where: { email } });
-  if (!user) return res.send("User not found");
-  const match = comparePassword(password, user.password);
-  if (!match) return res.send("Incorrect password");
-  req.session.userId = user.id;
-  res.redirect("/dashboard");
+  try {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    const password = String(req.body?.password || "");
+
+    if (!email || !password) {
+      req.flash("error_msg", "Email and password are required.");
+      return res.redirect("/login");
+    }
+
+    const user = await User.findOne({ where: { email } });
+    if (!user || !(await comparePassword(password, user.password))) {
+      req.flash("error_msg", "Invalid email or password.");
+      return res.redirect("/login");
+    }
+
+    await regenerateSession(req);
+    req.session.userId = user.id;
+    return res.redirect("/dashboard");
+  } catch (error) {
+    console.error("Login failed:", error.message);
+    req.flash("error_msg", "Sign in is temporarily unavailable. Please try again.");
+    return res.redirect("/login");
+  }
 };
 
 export const registerUser = async (req, res) => {
-  const { name, email, password } = req.body;
-  const hashed = hashPassword(password);
-  const user = await User.create({ name, email, password: hashed });
-  req.session.userId = user.id;
-  res.redirect("/dashboard");
+  try {
+    const name = String(req.body?.name || "").trim();
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    const password = String(req.body?.password || "");
+
+    if (!name || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      req.flash("error_msg", "Enter a valid name and email address.");
+      return res.redirect("/register");
+    }
+    if (password.length < 8) {
+      req.flash("error_msg", "Password must be at least 8 characters long.");
+      return res.redirect("/register");
+    }
+    if (await User.findOne({ where: { email } })) {
+      req.flash("error_msg", "That email is already registered.");
+      return res.redirect("/register");
+    }
+
+    const user = await User.create({ name, email, password: await hashPassword(password) });
+    await regenerateSession(req);
+    req.session.userId = user.id;
+    return res.redirect("/dashboard");
+  } catch (error) {
+    console.error("Registration failed:", error.message);
+    req.flash("error_msg", "Registration is temporarily unavailable. Please try again.");
+    return res.redirect("/register");
+  }
 };
 
 export const logoutUser = (req, res) => {
-  req.session.destroy();
-  res.redirect("/login");
+  req.session.destroy(() => res.redirect("/login"));
+};
+
+// Borrowed Books and its actions never require authentication, so legacy SSO
+// links simply redirect through instead of creating a session.
+export const ssoLogin = (req, res) => {
+  const next = req.query.next;
+  const target = typeof next === "string" && next.startsWith("/") && !next.startsWith("//")
+    ? next
+    : "/admin/borrowings";
+  return res.redirect(target);
 };

@@ -22,25 +22,22 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
     */
-import { Book } from "../models/Book.js";
-import { sequelize } from "../models/Book.js";
+import { Book, sequelize } from "../models/index.js";
 import { Op } from "sequelize";
-
-await sequelize.sync();
 
 export const homePage = async (req, res) => {
   const featured = await Book.findAll({
     order: [["createdAt", "DESC"]],
     limit: 8
   });
-  const genres = await Book.findAll({
-    attributes: [[sequelize.fn("DISTINCT", sequelize.col("genre")), "genre"]],
-    where: { genre: { [Op.ne]: null } },
+  const categories = await Book.findAll({
+    attributes: [[sequelize.fn("DISTINCT", sequelize.col("category")), "category"]],
+    where: { category: { [Op.ne]: null } },
     raw: true
   });
   res.render("home", {
     title: "BetLog — Library Borrow & Return",
     featured,
-    genres: genres.map((g) => g.genre).filter(Boolean)
+    genres: categories.map((entry) => entry.category).filter(Boolean)
   });
 };

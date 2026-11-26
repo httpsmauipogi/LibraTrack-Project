@@ -26,11 +26,11 @@
     
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import { Sequelize } from "sequelize";
 
-const appRoot = process.cwd();
-const dataDir = path.join(appRoot, "data");
-fs.mkdirSync(dataDir, { recursive: true });
+const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const sharedDataDir = path.resolve(appRoot, "..", "data");
 
 export const getDatabaseConfig = (env = process.env) => {
   const dialectName = String(env.DB_DIALECT || "sqlite").toLowerCase();
@@ -42,7 +42,7 @@ export const getDatabaseConfig = (env = process.env) => {
       port: Number(env.DB_PORT || 3306),
       username: env.DB_USER || env.DB_USERNAME || "root",
       password: env.DB_PASS || env.DB_PASSWORD || "",
-      database: env.DB_NAME || "libraTrackIndividual",
+      database: env.DB_NAME || "LibraTrack",
       logging: false
     };
   }
@@ -54,16 +54,56 @@ export const getDatabaseConfig = (env = process.env) => {
       port: Number(env.DB_PORT || 5432),
       username: env.DB_USER || env.DB_USERNAME || "postgres",
       password: env.DB_PASS || env.DB_PASSWORD || "",
-      database: env.DB_NAME || "libraTrackIndividual",
+      database: env.DB_NAME || "LibraTrack",
       logging: false
     };
   }
 
+  // All portals use the same SQLite file unless DB_STORAGE overrides it.
+  const storage = env.DB_STORAGE
+    ? (env.DB_STORAGE === ":memory:" || path.isAbsolute(env.DB_STORAGE)
+        ? env.DB_STORAGE
+        : path.resolve(appRoot, env.DB_STORAGE))
+    : path.join(sharedDataDir, "shared.db");
+
+  if (storage !== ":memory:") fs.mkdirSync(path.dirname(storage), { recursive: true });
+
   return {
     dialect: "sqlite",
-    storage: path.join(dataDir, "libraTrack.db"),
+    storage,
     logging: false
   };
 };
 
-export const sequelize = new Sequelize(getDatabaseConfig());
+export const databaseConfig = getDatabaseConfig();
+export const sequelize = new Sequelize(databaseConfig);
+
+export const connectDatabase = async () => {
+  if (databaseConfig.dialect === "mysql") {
+    const serverSequelize = new Sequelize({
+      dialect: "mysql",
+      host: databaseConfig.host,
+      port: databaseConfig.port,
+      username: databaseConfig.username,
+      password: databaseConfig.password,
+      logging: false
+    });
+    try {
+      await serverSequelize.query(
+        `CREATE DATABASE IF NOT EXISTS \`${String(databaseConfig.database).replace(/`/g, "``")}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+      );
+    } finally {
+      await serverSequelize.close();
+    }
+  }
+
+  await sequelize.authenticate();
+  // Importing controllers registers every model on this Sequelize instance.
+  // One canonical schema is shared by every portal; do not rebuild tables.
+  await sequelize.sync();
+  const location = databaseConfig.dialect === "sqlite"
+    ? databaseConfig.storage
+    : `${databaseConfig.host}:${databaseConfig.port}/${databaseConfig.database}`;
+  console.log(`✅ Connected to ${databaseConfig.dialect} database: ${location}`);
+  return true;
+};

@@ -1,11 +1,42 @@
-import { Book } from "../models/bookModel.js";
-import { Loan } from "../models/loanModel.js";
-import { User } from "../models/userModel.js";
-import { sequelize } from "../models/db.js";
+import { Op } from "sequelize";
+import { Book, Borrowing, User, sequelize } from "../models/index.js";
+import {
+  isActiveStatus,
+  normalizeBorrowingStatus,
+  statusLabel
+} from "../../shared/borrowing-status.js";
 
-const currentUser = async (req) => {
-  if (!req.session.userId) return null;
-  return User.findByPk(req.session.userId, { attributes: ["id", "role"] });
+// Public catalog site: read-only view of the same books Catalog Admin manages.
+export const catalogPage = async (req, res) => {
+  const q = String(req.query.q || "").trim();
+  const category = String(req.query.category || "").trim();
+  const where = {};
+  if (category) where.category = category;
+  if (q) {
+    where[Op.or] = [
+      { title: { [Op.like]: `%${q}%` } },
+      { author: { [Op.like]: `%${q}%` } }
+    ];
+  }
+
+  try {
+    const books = await Book.findAll({ where, order: [["title", "ASC"]] });
+    const categories = await Book.findAll({
+      attributes: [[sequelize.fn("DISTINCT", sequelize.col("category")), "category"]],
+      where: { category: { [Op.ne]: null } },
+      raw: true
+    });
+    res.render("books", {
+      title: "Library Catalog",
+      books,
+      categories: categories.map((entry) => entry.category).filter(Boolean),
+      q,
+      category
+    });
+  } catch (error) {
+    console.error("Could not render the catalog:", error);
+    res.status(500).send("Could not load the catalog. Please try again.");
+  }
 };
 
 export const listBooks = async (req, res) => {
@@ -19,12 +50,6 @@ export const listBooks = async (req, res) => {
 };
 
 export const createBook = async (req, res) => {
-  const user = await currentUser(req);
-  if (!user) return res.status(401).json({ error: "Sign in to manage the catalog." });
-  if (user.role !== "admin" && user.role !== "staff") {
-    return res.status(403).json({ error: "Only library staff can add books." });
-  }
-
   const title = String(req.body.title || "").trim();
   const author = String(req.body.author || "").trim();
   const isbn = String(req.body.isbn || "").trim();
@@ -40,7 +65,8 @@ export const createBook = async (req, res) => {
       title, author, isbn, category, shelf,
       totalCopies: quantity,
       availableCopies: quantity,
-      borrowCount: 0
+      borrowCount: 0,
+      status: "available"
     });
     res.status(201).json(book);
   } catch (error) {
@@ -53,12 +79,6 @@ export const createBook = async (req, res) => {
 };
 
 export const updateBook = async (req, res) => {
-  const user = await currentUser(req);
-  if (!user) return res.status(401).json({ error: "Sign in to manage the catalog." });
-  if (user.role !== "admin" && user.role !== "staff") {
-    return res.status(403).json({ error: "Only library staff can edit books." });
-  }
-
   const quantity = Number.parseInt(req.body.quantity, 10);
   if (!Number.isInteger(quantity) || quantity < 1) {
     return res.status(400).json({ error: "Enter at least one copy." });
@@ -78,7 +98,13 @@ export const updateBook = async (req, res) => {
     if (!title || !author || !isbn || !category || !shelf) {
       return res.status(400).json({ error: "Complete all book fields." });
     }
-    book.set({ title, author, isbn, category, shelf, totalCopies: quantity, availableCopies: quantity - checkedOut });
+    const availableCopies = quantity - checkedOut;
+    book.set({
+      title, author, isbn, category, shelf,
+      totalCopies: quantity,
+      availableCopies,
+      status: availableCopies > 0 ? "available" : "unavailable"
+    });
     await book.save();
     res.json(book);
   } catch (error) {
@@ -91,16 +117,13 @@ export const updateBook = async (req, res) => {
 };
 
 export const deleteBook = async (req, res) => {
-  const user = await currentUser(req);
-  if (!user) return res.status(401).json({ error: "Sign in to manage the catalog." });
-  if (user.role !== "admin" && user.role !== "staff") {
-    return res.status(403).json({ error: "Only library staff can remove books." });
-  }
   try {
     const book = await Book.findByPk(req.params.id);
     if (!book) return res.status(404).json({ error: "Book not found." });
-    const activeLoans = await Loan.count({ where: { BookId: book.id, status: "borrowed" } });
-    if (activeLoans) return res.status(409).json({ error: "This book cannot be removed while it is borrowed." });
+    const borrowingHistory = await Borrowing.count({ where: { bookId: book.id } });
+    if (borrowingHistory) {
+      return res.status(409).json({ error: "This book has borrowing history and cannot be removed." });
+    }
     await book.destroy();
     res.json({ success: true });
   } catch (error) {
@@ -109,59 +132,68 @@ export const deleteBook = async (req, res) => {
   }
 };
 
+// Borrow Logs read every record in the shared borrowings table. Keeping the
+// canonical status lets the dashboard account for requests and loans separately.
 export const listMyLoans = async (req, res) => {
-  const user = await currentUser(req);
-  if (!user) return res.status(401).json({ error: "Sign in to view your loans." });
-  if (user.role !== "admin" && user.role !== "staff") {
-    return res.status(503).json({ error: "Patron loan access is temporarily unavailable while the user-system integration is being prepared." });
-  }
   try {
-    const loans = await Loan.findAll({
+    const records = await Borrowing.findAll({
       include: [
-        { model: Book, attributes: ["title", "author", "isbn"] },
-        { model: User, attributes: ["id", "name", "email"] }
+        { model: Book, as: "book", attributes: ["id", "title", "author", "isbn", "category", "shelf"] },
+        { model: User, as: "user", attributes: ["id", "name", "email"] }
       ],
       order: [["createdAt", "DESC"]]
+    });
+
+    const loans = records.map((record) => {
+      const row = record.get({ plain: true });
+      const status = normalizeBorrowingStatus(row.status);
+      return {
+        ...row,
+        Book: row.book || null,
+        User: row.user || null,
+        returnedAt: row.returnDate,
+        status,
+        rawStatus: status,
+        statusLabel: statusLabel(status),
+        isActiveLoan: isActiveStatus(status)
+      };
     });
     res.json(loans);
   } catch (error) {
     console.error("Could not load loans:", error);
-    res.status(500).json({ error: "Could not load your borrowing history." });
+    res.status(500).json({ error: "Could not load borrowing history." });
   }
 };
 
 export const returnLoan = async (req, res) => {
-  const user = await currentUser(req);
-  if (!user) return res.status(401).json({ error: "Sign in to process returns." });
-  if (user.role !== "admin" && user.role !== "staff") {
-    return res.status(403).json({ error: "Only library staff can process returns." });
-  }
-
   const transaction = await sequelize.transaction();
   try {
-    const loan = await Loan.findByPk(req.params.id, {
-      include: [{ model: Book }],
+    const borrowing = await Borrowing.findByPk(req.params.id, {
+      include: [{ model: Book, as: "book" }],
       transaction,
       lock: transaction.LOCK.UPDATE
     });
-    if (!loan) {
+    if (!borrowing) {
       await transaction.rollback();
       return res.status(404).json({ error: "Loan not found." });
     }
-    if (loan.status === "returned") {
+    if (!isActiveStatus(borrowing.status)) {
       await transaction.rollback();
-      return res.status(409).json({ error: "This loan has already been returned." });
+      return res.status(409).json({ error: "Only an active loan can be returned." });
     }
 
-    loan.status = "returned";
-    loan.returnedAt = new Date().toISOString().slice(0, 10);
-    await loan.save({ transaction });
-    if (loan.Book) {
-      loan.Book.availableCopies = Math.min(loan.Book.totalCopies, loan.Book.availableCopies + 1);
-      await loan.Book.save({ transaction });
+    borrowing.status = "returned";
+    borrowing.returnDate = new Date().toISOString().slice(0, 10);
+    await borrowing.save({ transaction });
+
+    const book = borrowing.book;
+    if (book) {
+      book.availableCopies = Math.min(book.totalCopies, book.availableCopies + 1);
+      book.status = book.availableCopies > 0 ? "available" : "unavailable";
+      await book.save({ transaction });
     }
     await transaction.commit();
-    res.json({ success: true, loan });
+    res.json({ success: true, loan: borrowing });
   } catch (error) {
     if (!transaction.finished) await transaction.rollback();
     console.error("Could not process return:", error);

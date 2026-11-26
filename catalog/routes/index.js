@@ -29,13 +29,13 @@ import { homePage } from "../controllers/homeController.js";
 const router = express.Router();
 router.get("/", homePage);
 
-import { loginPage, dashboardPage, loginUser, logoutUser } from "../controllers/authController.js";
-import { listBooks, createBook, updateBook, deleteBook, listMyLoans, returnLoan } from "../controllers/bookController.js";
+import { dashboardPage } from "../controllers/adminController.js";
+import { catalogPage, listBooks, createBook, updateBook, deleteBook, listMyLoans, returnLoan } from "../controllers/bookController.js";
 
-router.get("/login", loginPage);
-router.post("/login", loginUser);
+// Catalog Admin is permanently public. There are no login, SSO, or logout
+// routes to gate the dashboard or its APIs.
 router.get("/dashboard", dashboardPage);
-router.get("/logout", logoutUser);
+router.get("/books", catalogPage);
 router.get("/api/books", listBooks);
 router.post("/api/books", createBook);
 router.put("/api/books/:id", updateBook);

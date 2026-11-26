@@ -1,6 +1,6 @@
 # LibraTrack — Library Borrow & Return Web System
 
-XianFire Framework project built with Express, Sequelize, MySQL, and Tailwind CSS. A web system for borrowing and returning books with role-based access (Admin, Staff, Member).
+XianFire Framework project built with Express, Sequelize, SQLite (MySQL optional), and Tailwind CSS. A web system for borrowing and returning books with role-based access (Admin, Staff, Member).
 
 ## Features
 
@@ -9,13 +9,14 @@ XianFire Framework project built with Express, Sequelize, MySQL, and Tailwind CS
 - Borrow request submission (pending → approved → active → returned)
 - Admin/Staff borrowing management (approve/reject requests)
 - User borrowing history with return functionality
-- MySQL database via Sequelize ORM
+- SQLite database by default (`data/betlog.db`), MySQL via `DB_DIALECT=mysql`
+- Default port 3002; the shared LibraTrack admin account works here too
 
 ## Tech Stack
 
 - Node.js + Express
-- Sequelize ORM (MySQL dialect)
-- MySQL (via Laragon)
+- Sequelize ORM (SQLite by default)
+- SQLite (no external database server required)
 - Handlebars (`.xian` views)
 - Tailwind CSS (CDN)
 - express-session + connect-flash

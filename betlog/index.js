@@ -32,42 +32,38 @@ import fs from 'fs';
 import hbs from "hbs";
 import { fileURLToPath, pathToFileURL } from "url";
 import { dirname } from "path";
-import { Book } from "./models/Book.js";
-import { Borrowing } from "./models/Borrowing.js";
-import { User } from "./models/userModel.js";
-
-// Wire Sequelize model associations (used by include queries)
-Book.associate({ Borrowing });
-Borrowing.associate({ Book, User });
+import { randomBytes } from "crypto";
+import { connectDatabase } from "./models/db.js";
+import { registerHelpers, registerSharedPartials } from "../shared/hbs-helpers.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-hbs.registerHelper("eq", (a, b) => a === b);
-hbs.registerHelper("ne", (a, b) => a !== b);
-hbs.registerHelper("gt", (a, b) => Number(a) > Number(b));
-hbs.registerHelper("lt", (a, b) => Number(a) < Number(b));
-hbs.registerHelper("and", (a, b) => a && b);
-hbs.registerHelper("or", (a, b) => a || b);
-hbs.registerHelper("not", (a) => !a);
-hbs.registerHelper("initial", (value) => (value ? String(value).charAt(0).toUpperCase() : "?"));
-hbs.registerHelper("date", (value) => {
-  if (!value) return "-";
-  const d = new Date(value);
-  return isNaN(d.getTime()) ? "-" : d.toLocaleString();
-});
+const sharedRoot = path.join(__dirname, "..", "shared");
+registerHelpers(hbs);
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
+const sessionSecret = process.env.SESSION_SECRET || (
+  process.env.NODE_ENV === "production" ? null : randomBytes(32).toString("hex")
+);
+
+if (!sessionSecret) {
+  throw new Error("SESSION_SECRET must be set in production.");
+}
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(process.cwd(), "public")));
+app.use(express.static(path.join(__dirname, "public")));
 
 app.use(session({
-  secret: "xianfire-secret-key",
+  secret: sessionSecret,
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production"
+  }
 }));
 app.use(flash());
 
@@ -92,35 +88,19 @@ app.engine("xian", async (filePath, options, callback) => {
 app.use((req, res, next) => {
   res.locals.success_msg = req.flash("success_msg");
   res.locals.error_msg = req.flash("error_msg");
+  // Borrow requests are reviewed on the central admin console; this portal's
+  // navbar should only expose the public catalog link.
+  res.locals.hideReviewLink = true;
+  res.locals.catalogUrl = new URL("/books", process.env.CATALOG_URL || "http://localhost:3001").toString();
+  // Borrowed Books is permanently public, so its page hides auth controls.
+  res.locals.hideAuthLinks =
+    req.path === "/admin/borrowings" || req.path.startsWith("/admin/borrowings/");
   next();
 });
 
-
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "xian");
-const partialsDir = path.join(__dirname, "views/partials");
-fs.readdir(partialsDir, (err, files) => {
-  if (err) {
-    console.error("❌ Could not read partials directory:", err);
-    return;
-  }
-
-   files
-    .filter(file => file.endsWith('.xian'))
-    .forEach(file => {
-      const partialName = file.replace('.xian', ''); 
-      const fullPath = path.join(partialsDir, file);
-
-      fs.readFile(fullPath, 'utf8', (err, content) => {
-        if (err) {
-          console.error(`❌ Failed to read partial: ${file}`, err);
-          return;
-        }
-        hbs.registerPartial(partialName, content);
-        
-      });
-    });
-});
+registerSharedPartials(hbs, { fs, path, appRoot: __dirname, sharedRoot });
 
 app.use("/", router);
 
@@ -128,10 +108,12 @@ export default app;
 
 // Start the HTTP server; resolves once the server is listening.
 // Exported so the Electron main process can control startup itself.
-export const startServer = (port = PORT) => {
+export const startServer = async (port = PORT) => {
+  await connectDatabase();
+
   return new Promise((resolve, reject) => {
     const server = app.listen(port, () => {
-      console.log(`🔥 XianFire running at http://localhost:${PORT}`);
+      console.log(`🔥 XianFire running at http://localhost:${server.address().port}`);
       resolve(server);
     });
     server.on("error", reject);
@@ -144,5 +126,8 @@ const isDirectRun =
   process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (isDirectRun && !process.env.XIAN_ELECTRON) {
-  startServer();
+  startServer().catch((error) => {
+    console.error("❌ Failed to start server:", error.message);
+    process.exit(1);
+  });
 }

@@ -7,7 +7,7 @@ import { resolvePort } from "../index.js";
 test("defaults to a SQLite database when no MySQL environment is configured", () => {
   const config = getDatabaseConfig();
   assert.equal(config.dialect, "sqlite");
-  assert.ok(config.storage.includes("libraTrack"));
+  assert.ok(config.storage.endsWith("shared.db"));
 });
 
 test("resolves the next available port when the preferred one is busy", () => {

@@ -7,3 +7,7 @@ data/*.db
 shared/.sso_secret
 
 shared/.sso_secret
+
+*.db
+.env
+shared/.sso_secret

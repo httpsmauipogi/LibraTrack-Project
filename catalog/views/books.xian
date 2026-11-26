@@ -1,0 +1,58 @@
+{{> head}}
+<body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col custom-scrollbar">
+{{> navbar}}
+
+<main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+  <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-extrabold text-slate-900">Library Catalog</h1>
+      <p class="text-sm text-slate-500 mt-1">Books added through Catalog Admin, shared with every portal.</p>
+    </div>
+    <span class="lt-badge bg-indigo-50 text-indigo-700">{{books.length}} title{{#unless (eq books.length 1)}}s{{/unless}}</span>
+  </div>
+
+  <form action="/books" method="GET" class="flex flex-col sm:flex-row gap-2">
+    <input type="text" name="q" value="{{q}}" placeholder="Search by title or author..." class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500"/>
+    {{#if category}}<input type="hidden" name="category" value="{{category}}"/>{{/if}}
+    <button type="submit" class="lt-btn shrink-0"><i class="fa-solid fa-magnifying-glass mr-1"></i>Search</button>
+  </form>
+
+  {{#if categories.length}}
+    <div class="flex flex-wrap gap-2">
+      <a href="/books{{#if q}}?q={{q}}{{/if}}" class="px-3 py-1.5 rounded-full text-xs font-semibold border {{#unless category}}bg-indigo-600 text-white border-indigo-600{{else}}bg-white text-slate-600 border-slate-200 hover:border-indigo-400{{/unless}}">All Categories</a>
+      {{#each categories}}
+        <a href="/books?category={{this}}{{#if ../q}}&q={{../q}}{{/if}}" class="px-3 py-1.5 rounded-full text-xs font-semibold border {{#if (eq this ../category)}}bg-indigo-600 text-white border-indigo-600{{else}}bg-white text-slate-600 border-slate-200 hover:border-indigo-400{{/if}}">{{this}}</a>
+      {{/each}}
+    </div>
+  {{/if}}
+
+  {{#if books.length}}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      {{#each books}}
+        <article class="lt-card rounded-2xl p-5 flex flex-col gap-3">
+          <div class="flex items-start justify-between gap-3">
+            <h2 class="font-extrabold text-slate-900 leading-snug">{{this.title}}</h2>
+            <span class="lt-badge shrink-0 {{#if (gt this.availableCopies 0)}}bg-emerald-50 text-emerald-700{{else}}bg-rose-50 text-rose-700{{/if}}">{{#if (gt this.availableCopies 0)}}Available{{else}}Unavailable{{/if}}</span>
+          </div>
+          <p class="text-sm text-slate-500">{{this.author}}</p>
+          <div class="mt-auto pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs text-slate-500">
+            <span><strong class="text-slate-700">Category:</strong> {{this.category}}</span>
+            <span><strong class="text-slate-700">Shelf:</strong> {{this.shelf}}</span>
+            <span><strong class="text-slate-700">Copies:</strong> {{this.totalCopies}}</span>
+            <span><strong class="text-slate-700">Available:</strong> {{this.availableCopies}}</span>
+          </div>
+          <p class="text-[11px] text-slate-400">ISBN {{this.isbn}}</p>
+        </article>
+      {{/each}}
+    </div>
+  {{else}}
+    <div class="rounded-2xl border border-slate-200 bg-white py-16 text-center">
+      <i class="fa-solid fa-book-open text-4xl text-slate-300"></i>
+      <p class="mt-3 text-sm text-slate-500">No books match this view. Add books in Catalog Admin.</p>
+      <a href="/dashboard" class="lt-btn mt-4 inline-block">Open Catalog Admin</a>
+    </div>
+  {{/if}}
+</main>
+
+{{> footer}}
+</body>

@@ -9,6 +9,9 @@
         <h2 class="text-2xl font-bold text-gray-900">Create your account</h2>
         <p class="text-sm text-gray-500 mt-1">Join BetLog Borrow &amp; Return</p>
       </div>
+      {{#each error_msg}}
+        <div class="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700" role="alert">{{this}}</div>
+      {{/each}}
       <form class="space-y-4" method="POST" action="/register">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
