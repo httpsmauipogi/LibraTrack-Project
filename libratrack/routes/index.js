@@ -30,11 +30,20 @@ import {
   loginPage,
   registerPage,
   handleLogin,
+  handleRegister,
   logout,
   dashboardPage,
+  adminPage,
+  portalLogin,
+  adminRequestsPage,
+  approveAdminRequest,
+  rejectAdminRequest,
   getBooks,
   getMemberHolds,
   getMemberLoans,
+  getMemberRequests,
+  createMemberRequest,
+  cancelMemberRequest,
   createMemberHold,
   deleteMemberHold
 } from "../controllers/homeController.js";
@@ -46,11 +55,22 @@ router.get("/login", loginPage);
 router.post("/login", handleLogin);
 router.get("/logout", logout);
 router.get("/register", registerPage);
+router.post("/register", handleRegister);
 router.get("/dashboard", dashboardPage);
+// Borrow Review is permanently public. No admin session is required to view
+// requests or approve/reject them.
+router.get("/admin", adminPage);
+router.get("/admin/requests", adminRequestsPage);
+router.post("/admin/requests/:id/approve", approveAdminRequest);
+router.post("/admin/requests/:id/reject", rejectAdminRequest);
+router.get("/admin/portal/:portal", portalLogin);
 
 router.get("/api/books", getBooks);
 router.get("/api/member/holds", getMemberHolds);
 router.get("/api/member/loans", getMemberLoans);
+router.get("/api/member/requests", getMemberRequests);
+router.post("/api/member/requests", createMemberRequest);
+router.delete("/api/member/requests/:id", cancelMemberRequest);
 router.post("/api/member/holds", createMemberHold);
 router.delete("/api/member/holds/:holdId", deleteMemberHold);
 

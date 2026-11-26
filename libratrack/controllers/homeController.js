@@ -1,7 +1,6 @@
-
-    /*
+/*
     MIT License
-    
+
     Copyright (c) 2025 Christian I. Cabrera || XianFire Framework
     Mindoro State University - Philippines
 
@@ -23,32 +22,100 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
     */
-import { User } from "../models/userModel.js";
+import bcrypt from "bcrypt";
+import { randomBytes } from "node:crypto";
+import { Op } from "sequelize";
+import { User, Book, Borrowing, sequelize } from "../models/index.js";
+import { publicAdmin } from "../../shared/public-admin.js";
+import {
+  ACTIVE_STATUSES,
+  REVIEW_STATUSES,
+  isReviewStatus,
+  normalizeBorrowingStatus,
+  statusLabel,
+  statusQueryVariants
+} from "../../shared/borrowing-status.js";
 
-const seedBooks = [
-  { id: 101, title: "Clean Code: Agile Software Craftsmanship", author: "Robert C. Martin", isbn: "978-0132350884", category: "Computer Science", shelf: "CS-101-A", total: 5, available: 3, accent: "from-emerald-700 to-teal-900" },
-  { id: 102, title: "Designing Data-Intensive Applications", author: "Martin Kleppmann", isbn: "978-1449373320", category: "Computer Science", shelf: "CS-204-B", total: 4, available: 2, accent: "from-slate-700 to-slate-900" },
-  { id: 103, title: "Introduction to Algorithms (CLRS)", author: "Thomas H. Cormen", isbn: "978-0262046305", category: "Computer Science", shelf: "CS-105-A", total: 3, available: 0, accent: "from-amber-700 to-orange-900" },
-  { id: 104, title: "Noli Me Tángere", author: "José Rizal", isbn: "978-0143039693", category: "Literature", shelf: "LIT-012-C", total: 8, available: 6, accent: "from-stone-700 to-stone-900" },
-  { id: 105, title: "The Pragmatic Programmer", author: "Andrew Hunt & David Thomas", isbn: "978-0135957059", category: "Computer Science", shelf: "CS-110-A", total: 4, available: 4, accent: "from-teal-700 to-emerald-950" },
-  { id: 106, title: "Structures: Why Things Don’t Fall Down", author: "J.E. Gordon", isbn: "978-0306812835", category: "Engineering", shelf: "ENG-301-D", total: 3, available: 2, accent: "from-cyan-800 to-slate-900" }
-];
+const SALT_ROUNDS = 10;
+const MAX_FAILED_LOGINS = 5;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 
-const defaultUsers = [
-  { id: "MEM-2026-001", name: "Library Member One", email: "member.one@libra.local", password: "password123", role: "member" },
-  { id: "MEM-2026-002", name: "Library Member Two", email: "member.two@libra.local", password: "password123", role: "member" }
+const today = () => new Date().toISOString().slice(0, 10);
+const dueInDays = (days) => {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+};
+
+// Demo accounts only. Passwords are stored as bcrypt hashes, never as plain text.
+const demoUsers = [
+  {
+    id: "MEM-2026-001",
+    name: "Library Member One",
+    email: "member.one@libra.local",
+    passwordHash: bcrypt.hashSync("password123", SALT_ROUNDS),
+    role: "member"
+  },
+  {
+    id: "MEM-2026-002",
+    name: "Library Member Two",
+    email: "member.two@libra.local",
+    passwordHash: bcrypt.hashSync("password123", SALT_ROUNDS),
+    role: "member"
+  }
 ];
 
 export const libraryStore = {
-  books: [...seedBooks],
-  holds: [
-    { holdId: "HLD-1001", bookId: 101, bookTitle: "Clean Code: Agile Software Craftsmanship", shelf: "CS-101-A", memberId: "MEM-2026-001", memberName: "Library Member One", note: "Counter pickup", createdAt: "2026-11-17", status: "Pending" },
-    { holdId: "HLD-1002", bookId: 104, bookTitle: "Noli Me Tángere", shelf: "LIT-012-C", memberId: "MEM-2026-001", memberName: "Library Member One", note: "Pickup after 2 PM", createdAt: "2026-11-17", status: "Pending" }
-  ],
-  loans: [
-    { loanId: "LOAN-501", bookId: 102, bookTitle: "Designing Data-Intensive Applications", memberId: "MEM-2026-001", memberName: "Library Member One", borrowDate: "2026-10-14", dueDate: "2026-10-28", status: "Borrowed" }
-  ]
+  holds: [],
+  loans: []
 };
+
+// Books come only from the catalog admin. The member portal proxies the
+// catalog API so every book list stays in sync with catalog additions.
+export const fetchCatalogBooks = async () => {
+  try {
+    const base = process.env.CATALOG_URL || "http://localhost:3001";
+    const response = await fetch(`${base}/api/books`, {
+      signal: AbortSignal.timeout(2000)
+    });
+    if (!response.ok) return [];
+    const data = await response.json();
+    if (!Array.isArray(data)) return [];
+
+    return data.map((book) => ({
+      ...book,
+      total: book.totalCopies ?? book.total ?? 0,
+      available: book.availableCopies ?? book.available ?? 0,
+      accent: "from-indigo-700 to-libra-deep"
+    }));
+  } catch {
+    return [];
+  }
+};
+
+// Short-lived, in-memory throttle for failed logins (per client + email).
+const failedLogins = new Map();
+
+const attemptKey = (req, email) => `${req.ip || req.socket?.remoteAddress || "unknown"}:${email}`;
+
+const readAttempts = (key) => {
+  const attempts = failedLogins.get(key);
+  if (!attempts) return { count: 0, firstAt: 0 };
+  if (Date.now() - attempts.firstAt > LOGIN_WINDOW_MS) {
+    failedLogins.delete(key);
+    return { count: 0, firstAt: 0 };
+  }
+  return attempts;
+};
+
+const isRateLimited = (key) => readAttempts(key).count >= MAX_FAILED_LOGINS;
+
+const recordFailedLogin = (key) => {
+  const attempts = readAttempts(key);
+  failedLogins.set(key, { count: attempts.count + 1, firstAt: attempts.firstAt || Date.now() });
+};
+
+const clearFailedLogins = (key) => failedLogins.delete(key);
 
 const getCurrentUser = (req) => {
   if (req.session && req.session.user) {
@@ -63,7 +130,24 @@ const getCurrentUser = (req) => {
   };
 };
 
-const normalizeEmail = (value = "") => value.trim().toLowerCase();
+const normalizeEmail = (value = "") => String(value).trim().toLowerCase();
+
+const toSessionUser = (user) => ({
+  id: user.memberId || user.id,
+  name: user.name,
+  email: normalizeEmail(user.email),
+  role: user.role || "member"
+});
+
+// A fresh session on login/registration prevents session fixation.
+const regenerateSession = (req) => new Promise((resolve, reject) => {
+  req.session.regenerate((error) => (error ? reject(error) : resolve()));
+});
+
+const redirectWithError = (req, res, route, message, status = 302) => {
+  req.flash("error_msg", message);
+  return res.status(status).redirect(route);
+};
 
 export const homePage = (req, res) => {
   res.render("home", { title: "LibraTrack Home" });
@@ -80,31 +164,94 @@ export const registerPage = (req, res) => {
 export const handleLogin = async (req, res) => {
   const { email, password } = req.body || {};
   const normalizedEmail = normalizeEmail(email);
+  const candidatePassword = String(password || "");
 
-  let user = defaultUsers.find(
-    (entry) => normalizeEmail(entry.email) === normalizedEmail && entry.password === String(password || "")
-  );
+  if (!normalizedEmail || !candidatePassword) {
+    return redirectWithError(req, res, "/login", "Email and password are required.");
+  }
 
+  const key = attemptKey(req, normalizedEmail);
+  if (isRateLimited(key)) {
+    return redirectWithError(req, res, "/login", "Too many failed attempts. Please try again later.", 429);
+  }
+
+  let matchedUser = null;
+
+  // Registered accounts live in the database and always use bcrypt hashes.
   try {
     const dbUser = await User.findOne({ where: { email: normalizedEmail } });
-    if (dbUser && String(dbUser.password) === String(password || "")) {
-      user = dbUser.toJSON();
+    if (dbUser && await bcrypt.compare(candidatePassword, dbUser.password)) {
+      matchedUser = dbUser;
     }
   } catch (error) {
-    // ignore database unavailability; fallback remains in-memory
+    console.warn("⚠️ Account lookup unavailable:", error.message);
   }
 
-  if (!user) {
-    user = {
-      id: "MEM-" + Date.now(),
-      name: normalizedEmail ? normalizedEmail.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()) : "New User",
-      email: normalizedEmail || "",
-      role: "member"
-    };
+  // Demo accounts are kept in code so the portal works before any DB setup.
+  if (!matchedUser) {
+    const demoUser = demoUsers.find((entry) => entry.email === normalizedEmail);
+    if (demoUser && await bcrypt.compare(candidatePassword, demoUser.passwordHash)) {
+      matchedUser = demoUser;
+    }
   }
 
-  req.session.user = user;
+  // Never create an account here: unknown credentials are simply rejected.
+  if (!matchedUser) {
+    recordFailedLogin(key);
+    return redirectWithError(req, res, "/login", "Invalid email or password.");
+  }
+
+  clearFailedLogins(key);
+  await regenerateSession(req);
+  req.session.user = toSessionUser(matchedUser);
   return res.redirect("/dashboard");
+};
+
+export const handleRegister = async (req, res) => {
+  const { firstName, lastName, email, password, confirmPassword } = req.body || {};
+  const name = [firstName, lastName].filter(Boolean).join(" ").trim();
+  const normalizedEmail = normalizeEmail(email);
+  const passwordText = String(password || "");
+
+  if (!name || !normalizedEmail || !passwordText) {
+    return redirectWithError(req, res, "/register", "All fields are required.");
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    return redirectWithError(req, res, "/register", "Enter a valid email address.");
+  }
+  if (passwordText.length < 8) {
+    return redirectWithError(req, res, "/register", "Password must be at least 8 characters long.");
+  }
+  if (passwordText !== String(confirmPassword || "")) {
+    return redirectWithError(req, res, "/register", "Passwords do not match.");
+  }
+  if (demoUsers.some((entry) => entry.email === normalizedEmail)) {
+    return redirectWithError(req, res, "/register", "That email is already registered.");
+  }
+
+  try {
+    const existing = await User.findOne({ where: { email: normalizedEmail } });
+    if (existing) {
+      return redirectWithError(req, res, "/register", "That email is already registered.");
+    }
+
+    const created = await User.create({
+      memberId: `MEM-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+      name,
+      email: normalizedEmail,
+      password: await bcrypt.hash(passwordText, SALT_ROUNDS),
+      role: "member"
+    });
+
+    clearFailedLogins(attemptKey(req, normalizedEmail));
+    await regenerateSession(req);
+    req.session.user = toSessionUser(created);
+    req.flash("success_msg", "Your account has been created.");
+    return res.redirect("/dashboard");
+  } catch (error) {
+    console.error("Registration failed:", error.message);
+    return redirectWithError(req, res, "/register", "Registration is temporarily unavailable. Please try again.");
+  }
 };
 
 export const logout = (req, res) => {
@@ -118,8 +265,219 @@ export const dashboardPage = (req, res) => {
   res.render("userDashboard", { title: "Member Dashboard", user });
 };
 
-export const getBooks = (req, res) => {
-  res.json(libraryStore.books);
+const portals = {
+  catalog: {
+    base: process.env.CATALOG_URL || "http://localhost:3001",
+    next: "/dashboard"
+  },
+  betlog: {
+    base: process.env.BETLOG_URL || "http://localhost:3002",
+    next: "/admin/borrowings"
+  },
+  requests: {
+    base: "",
+    next: "/admin/requests"
+  }
+};
+
+// Both portals are public now, so the admin buttons link straight to them.
+export const portalLogin = (req, res) => {
+  const portal = portals[req.params.portal];
+  if (!portal) return res.status(404).send("Unknown portal.");
+  return res.redirect(`${portal.base}${portal.next}`);
+};
+
+// Public admin pages still render a name in their header; fall back to the
+// shared display identity when no member session exists.
+const consoleAdmin = (req) => req.session?.user || publicAdmin();
+
+export const adminPage = async (req, res) => {
+  let users = [];
+  try {
+    const records = await User.findAll({
+      attributes: ["id", "memberId", "name", "email", "role", "createdAt"],
+      order: [["createdAt", "DESC"]]
+    });
+    users = records.map((record) => ({
+      memberId: record.memberId || `ID-${record.id}`,
+      name: record.name,
+      email: record.email,
+      role: record.role,
+      joined: record.createdAt ? new Date(record.createdAt).toISOString().split("T")[0] : ""
+    }));
+  } catch (error) {
+    console.warn("⚠️ Could not load accounts for the admin page:", error.message);
+  }
+
+  const catalogBooks = await fetchCatalogBooks();
+  const reviewRequests = await loadReviewRequests();
+  let activeLoans = 0;
+  try {
+    activeLoans = await Borrowing.count({
+      where: { status: { [Op.in]: statusQueryVariants(ACTIVE_STATUSES) } }
+    });
+  } catch (error) {
+    console.warn("⚠️ Could not load borrowing stats:", error.message);
+  }
+
+  res.render("admin", {
+    title: "Admin Portal",
+    admin: consoleAdmin(req),
+    users,
+    portals: [
+      {
+        label: "Catalog Admin",
+        description: "Add, edit, and remove books. Opens the catalog directly.",
+        url: `${portals.catalog.base}${portals.catalog.next}`
+      },
+      {
+        label: "Borrow Review",
+        description: "Review borrow requests submitted from the member dashboard.",
+        url: `${portals.requests.base}${portals.requests.next}`
+      },
+      {
+        label: "Borrowed Books",
+        description: "View books currently borrowed or returned in the borrow portal.",
+        url: `${portals.betlog.base}${portals.betlog.next}`
+      }
+    ],
+    stats: {
+      books: catalogBooks.length,
+      requests: reviewRequests.length,
+      loans: activeLoans
+    }
+  });
+};
+
+const serializeAdminRequest = (record) => {
+  const row = record.get({ plain: true });
+  const book = row.book || {};
+  const member = row.user || {};
+  const status = normalizeBorrowingStatus(row.status);
+  return {
+    id: row.id,
+    requestId: `REQ-${row.id}`,
+    bookId: row.bookId,
+    bookTitle: book.title || "Book",
+    author: book.author || "",
+    shelf: book.shelf || "",
+    isbn: book.isbn || "",
+    memberId: member.memberId || `ID-${row.userId}`,
+    memberName: member.name || "Library Member",
+    memberEmail: member.email || "",
+    note: row.notes || "",
+    createdAt: row.createdAt ? new Date(row.createdAt).toISOString().slice(0, 10) : "",
+    status,
+    statusLabel: statusLabel(status)
+  };
+};
+
+const loadReviewRequests = async () => {
+  try {
+    const records = await Borrowing.findAll({
+      where: { status: { [Op.in]: statusQueryVariants(REVIEW_STATUSES) } },
+      include: [
+        { model: Book, as: "book" },
+        { model: User, as: "user" }
+      ],
+      order: [["createdAt", "ASC"]]
+    });
+    return records.map(serializeAdminRequest);
+  } catch (error) {
+    console.warn("⚠️ Could not load borrow requests:", error.message);
+    return [];
+  }
+};
+
+const findReviewableRequest = (id) => Borrowing.findOne({
+  where: {
+    id,
+    status: { [Op.in]: statusQueryVariants(REVIEW_STATUSES) }
+  },
+  include: [
+    { model: Book, as: "book" },
+    { model: User, as: "user" }
+  ]
+});
+
+// Requests awaiting review are listed here and on the main admin console.
+// Approving one turns it into an active borrowing in the shared ledger.
+export const adminRequestsPage = async (req, res) => {
+  res.render("adminRequests", {
+    title: "Borrow Requests",
+    admin: consoleAdmin(req),
+    requests: await loadReviewRequests()
+  });
+};
+
+export const approveAdminRequest = async (req, res) => {
+  const id = Number.parseInt(req.params.id, 10);
+  if (!Number.isInteger(id)) {
+    req.flash("error_msg", "Invalid borrow request.");
+    return res.redirect("/admin/requests");
+  }
+
+  try {
+    const borrowing = await findReviewableRequest(id);
+    if (!borrowing || !isReviewStatus(borrowing.status)) {
+      req.flash("error_msg", "Borrow request not found or already reviewed.");
+      return res.redirect("/admin/requests");
+    }
+
+    const book = borrowing.book;
+    if (!book || book.availableCopies <= 0) {
+      req.flash("error_msg", "This book has no available copies, so the request cannot be approved.");
+      return res.redirect("/admin/requests");
+    }
+
+    const transaction = await sequelize.transaction();
+    try {
+      borrowing.borrowDate = today();
+      borrowing.dueDate = dueInDays(7);
+      borrowing.status = "active";
+      await borrowing.save({ transaction });
+      book.availableCopies -= 1;
+      book.borrowCount = (book.borrowCount || 0) + 1;
+      book.status = book.availableCopies > 0 ? "available" : "unavailable";
+      await book.save({ transaction });
+      await transaction.commit();
+      req.flash("success_msg", `REQ-${borrowing.id} approved and added to borrowed books.`);
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  } catch (error) {
+    console.warn("⚠️ Could not approve borrow request:", error.message);
+    req.flash("error_msg", "Could not approve this borrow request.");
+  }
+  return res.redirect("/admin/requests");
+};
+
+export const rejectAdminRequest = async (req, res) => {
+  const id = Number.parseInt(req.params.id, 10);
+  if (!Number.isInteger(id)) {
+    req.flash("error_msg", "Invalid borrow request.");
+    return res.redirect("/admin/requests");
+  }
+
+  try {
+    const borrowing = await findReviewableRequest(id);
+    if (!borrowing || !isReviewStatus(borrowing.status)) {
+      req.flash("error_msg", "Borrow request not found or already reviewed.");
+      return res.redirect("/admin/requests");
+    }
+    borrowing.status = "rejected";
+    await borrowing.save();
+    req.flash("success_msg", `REQ-${borrowing.id} rejected.`);
+  } catch (error) {
+    console.warn("⚠️ Could not reject borrow request:", error.message);
+    req.flash("error_msg", "Could not reject this borrow request.");
+  }
+  return res.redirect("/admin/requests");
+};
+
+export const getBooks = async (req, res) => {
+  res.json(await fetchCatalogBooks());
 };
 
 export const getMemberHolds = (req, res) => {
@@ -127,9 +485,178 @@ export const getMemberHolds = (req, res) => {
   res.json(libraryStore.holds.filter((hold) => hold.memberId === currentUser.id));
 };
 
-export const getMemberLoans = (req, res) => {
+// Member loans come from the shared borrowings table, so requests submitted in
+// Borrowing Management appear on the member dashboard.
+export const getMemberLoans = async (req, res) => {
   const currentUser = getCurrentUser(req);
-  res.json(libraryStore.loans.filter((loan) => loan.memberId === currentUser.id));
+  if (!currentUser.email) return res.json([]);
+
+  try {
+    const account = await User.findOne({ where: { email: currentUser.email } });
+    if (!account) return res.json([]);
+
+    const records = await Borrowing.findAll({
+      where: {
+        userId: account.id,
+        status: { [Op.in]: statusQueryVariants([...ACTIVE_STATUSES, "approved"]) }
+      },
+      include: [{ model: Book, as: "book", attributes: ["title", "author", "category", "shelf", "isbn"] }],
+      order: [["createdAt", "DESC"]]
+    });
+
+    res.json(records.map((record) => {
+      const row = record.get({ plain: true });
+      const book = row.book || {};
+      return {
+        id: row.id,
+        memberId: currentUser.id,
+        bookId: row.bookId,
+        bookTitle: book.title || "Book",
+        title: book.title || "Book",
+        author: book.author || "",
+        category: book.category || "",
+        shelf: book.shelf || "",
+        isbn: book.isbn || "",
+        borrowDate: row.borrowDate,
+        dueDate: row.dueDate,
+        status: "Borrowed"
+      };
+    }));
+  } catch (error) {
+    console.warn("⚠️ Could not load member loans:", error.message);
+    res.json([]);
+  }
+};
+
+// Demo accounts live only in code, so create their database identity on first
+// request. The random password hash is never a usable shared credential.
+const findOrCreateMemberAccount = async (currentUser) => {
+  const email = normalizeEmail(currentUser.email);
+  const [account] = await User.findOrCreate({
+    where: { email },
+    defaults: {
+      name: currentUser.name || "Library Member",
+      password: bcrypt.hashSync(randomBytes(32).toString("hex"), SALT_ROUNDS),
+      role: "member"
+    }
+  });
+  return account;
+};
+
+const serializeMemberRequest = (record, currentUser) => {
+  const row = record.get({ plain: true });
+  const book = row.book || {};
+  const status = String(row.status || "pending");
+  return {
+    id: row.id,
+    holdId: `REQ-${row.id}`,
+    requestId: `REQ-${row.id}`,
+    borrowingId: row.id,
+    bookId: row.bookId,
+    bookTitle: book.title || "Book",
+    author: book.author || "",
+    shelf: book.shelf || "",
+    isbn: book.isbn || "",
+    memberId: currentUser.id,
+    memberName: currentUser.name,
+    note: row.notes || "",
+    createdAt: row.createdAt ? new Date(row.createdAt).toISOString().slice(0, 10) : "",
+    status: status.charAt(0).toUpperCase() + status.slice(1),
+    rawStatus: status
+  };
+};
+
+// Requests submitted here are the shared borrowings that BetLog reviews.
+export const getMemberRequests = async (req, res) => {
+  const currentUser = getCurrentUser(req);
+  if (!currentUser.email) return res.json([]);
+
+  try {
+    const account = await User.findOne({ where: { email: normalizeEmail(currentUser.email) } });
+    if (!account) return res.json([]);
+
+    const records = await Borrowing.findAll({
+      where: {
+        userId: account.id,
+        status: { [Op.in]: statusQueryVariants(["pending", "rejected", "cancelled"]) }
+      },
+      include: [{ model: Book, as: "book", attributes: ["title", "author", "shelf", "isbn"] }],
+      order: [["createdAt", "DESC"]]
+    });
+    res.json(records.map((record) => serializeMemberRequest(record, currentUser)));
+  } catch (error) {
+    console.warn("⚠️ Could not load member requests:", error.message);
+    res.json([]);
+  }
+};
+
+export const createMemberRequest = async (req, res) => {
+  const currentUser = getCurrentUser(req);
+  if (!currentUser.email) return res.status(401).json({ error: "Sign in to request a book." });
+
+  const bookId = Number.parseInt(req.body?.bookId, 10);
+  if (!Number.isInteger(bookId)) {
+    return res.status(400).json({ error: "Select a valid book." });
+  }
+  const note = String(req.body?.note || "").trim();
+
+  try {
+    const account = await findOrCreateMemberAccount(currentUser);
+    const book = await Book.findByPk(bookId);
+    if (!book) return res.status(404).json({ error: "Book not found." });
+
+    const existing = await Borrowing.findOne({
+      where: {
+        userId: account.id,
+        bookId,
+        status: { [Op.in]: statusQueryVariants([...REVIEW_STATUSES, ...ACTIVE_STATUSES]) }
+      }
+    });
+    if (existing) {
+      return res.status(409).json({ error: "You already have an open request for this book." });
+    }
+
+    const borrowing = await Borrowing.create({
+      userId: account.id,
+      bookId,
+      status: "pending",
+      notes: note || "Borrow request submitted from member dashboard."
+    });
+    const record = await Borrowing.findByPk(borrowing.id, {
+      include: [{ model: Book, as: "book", attributes: ["title", "author", "shelf", "isbn"] }]
+    });
+    res.status(201).json(serializeMemberRequest(record, currentUser));
+  } catch (error) {
+    console.warn("⚠️ Could not submit member request:", error.message);
+    res.status(500).json({ error: "Could not submit your borrow request." });
+  }
+};
+
+export const cancelMemberRequest = async (req, res) => {
+  const currentUser = getCurrentUser(req);
+  if (!currentUser.email) return res.status(401).json({ error: "Sign in to cancel a request." });
+
+  const id = Number.parseInt(req.params.id, 10);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: "Invalid request." });
+
+  try {
+    const account = await User.findOne({ where: { email: normalizeEmail(currentUser.email) } });
+    if (!account) return res.status(404).json({ error: "Request not found." });
+    const borrowing = await Borrowing.findOne({
+      where: {
+        id,
+        userId: account.id,
+        status: { [Op.in]: statusQueryVariants(["pending"]) }
+      }
+    });
+    if (!borrowing) return res.status(404).json({ error: "Pending request not found." });
+    borrowing.status = "cancelled";
+    await borrowing.save();
+    res.json({ success: true, id });
+  } catch (error) {
+    console.warn("⚠️ Could not cancel member request:", error.message);
+    res.status(500).json({ error: "Could not cancel this request." });
+  }
 };
 
 export const createMemberHold = (req, res) => {

@@ -7,10 +7,17 @@
           <div class="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center text-xl font-bold">L</div>
           <div>
             <p class="text-xs font-bold uppercase tracking-[0.25em] text-indigo-100">LibraTrack</p>
-            <h1 class="text-2xl font-bold">Member Access</h1>
+            <h1 class="text-2xl font-bold">Login Access</h1>
           </div>
         </div>
       </div>
+
+      {{#each error_msg}}
+        <div class="mx-8 mt-6 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700" role="alert">{{this}}</div>
+      {{/each}}
+      {{#each success_msg}}
+        <div class="mx-8 mt-6 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700" role="status">{{this}}</div>
+      {{/each}}
 
       <form class="px-8 py-7 space-y-5" method="POST" action="/login">
         <div>

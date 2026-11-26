@@ -22,15 +22,19 @@ test('member dashboard route responds successfully', async () => {
   const result = await fetchPath('/dashboard');
   assert.equal(result.status, 200);
   assert.match(result.body, /Member Portal|LibraTrack/i);
+  assert.match(result.body, /href="\/logout"/);
+  assert.match(result.body, /fa-right-from-bracket/);
 });
 
-test('public book API responds with catalog data', async () => {
+test('public book API proxies the catalog admin book list', async () => {
   const result = await fetchPath('/api/books');
   assert.equal(result.status, 200);
-  assert.match(result.body, /Clean Code|Designing Data-Intensive Applications|The Pragmatic Programmer/i);
+  const books = JSON.parse(result.body);
+  assert.ok(Array.isArray(books));
+  assert.ok(books.every((book) => book.id && book.title));
 });
 
-test('member holds and loans APIs include demo member data', async () => {
+test('member holds and loans start empty', async () => {
   const server = app.listen(0);
   await new Promise((resolve) => server.once('listening', resolve));
   const { port } = server.address();
@@ -62,8 +66,8 @@ test('member holds and loans APIs include demo member data', async () => {
 
   assert.equal(holds.status, 200);
   assert.equal(loans.status, 200);
-  assert.match(holdsBody, /HLD-1001|HLD-1002/i);
-  assert.match(loansBody, /LOAN-501/i);
+  assert.deepEqual(JSON.parse(holdsBody), []);
+  assert.deepEqual(JSON.parse(loansBody), []);
 });
 
 test('dashboard shows the signed-in user name from session', async () => {

@@ -32,22 +32,38 @@ import fs from 'fs';
 import hbs from "hbs";
 import { fileURLToPath, pathToFileURL } from "url";
 import { dirname } from "path";
+import { randomBytes } from "crypto";
 import { connectDatabase } from "./models/db.js";
+import { registerHelpers, registerSharedPartials } from "../shared/hbs-helpers.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const sharedRoot = path.join(__dirname, "..", "shared");
+registerHelpers(hbs);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const sessionSecret = process.env.SESSION_SECRET || (
+  process.env.NODE_ENV === "production" ? null : randomBytes(32).toString("hex")
+);
+
+if (!sessionSecret) {
+  throw new Error("SESSION_SECRET must be set in production.");
+}
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(process.cwd(), "public")));
+app.use(express.static(path.join(__dirname, "public")));
 
 app.use(session({
-  secret: "xianfire-secret-key",
+  secret: sessionSecret,
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production"
+  }
 }));
 app.use(flash());
 
@@ -72,35 +88,22 @@ app.engine("xian", async (filePath, options, callback) => {
 app.use((req, res, next) => {
   res.locals.success_msg = req.flash("success_msg");
   res.locals.error_msg = req.flash("error_msg");
+  res.locals.currentUser = req.session?.user || null;
+  res.locals.isAdmin = req.session?.user?.role === "admin";
+  res.locals.currentPath = req.path;
+  res.locals.reviewUrl = "/admin/requests";
+  res.locals.catalogUrl = new URL("/books", process.env.CATALOG_URL || "http://localhost:3001").toString();
+  // Borrow Review never asks for a login, so hide auth controls there too.
+  res.locals.hideAuthLinks = req.path === "/admin" || req.path.startsWith("/admin/");
   next();
 });
 
 
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "xian");
-const partialsDir = path.join(__dirname, "views/partials");
-fs.readdir(partialsDir, (err, files) => {
-  if (err) {
-    console.error("❌ Could not read partials directory:", err);
-    return;
-  }
-
-   files
-    .filter(file => file.endsWith('.xian'))
-    .forEach(file => {
-      const partialName = file.replace('.xian', ''); 
-      const fullPath = path.join(partialsDir, file);
-
-      fs.readFile(fullPath, 'utf8', (err, content) => {
-        if (err) {
-          console.error(`❌ Failed to read partial: ${file}`, err);
-          return;
-        }
-        hbs.registerPartial(partialName, content);
-        
-      });
-    });
-});
+// Shared theme first, then app-specific overrides. Synchronous so the first
+// request cannot render before partials are available.
+registerSharedPartials(hbs, { fs, path, appRoot: __dirname, sharedRoot });
 
 app.use("/", router);
 
@@ -116,7 +119,7 @@ export const startServer = async (port = PORT) => {
       const actualPort = server.address().port;
       console.log(`🔥 XianFire running at http://localhost:${actualPort}`);
       if (!dbReady) {
-        console.log("ℹ️ Database fallback mode is active. Configure MySQL with DB_NAME/DB_USER/DB_PASSWORD to enable persistent storage.");
+        console.log("ℹ️ Database fallback mode is active. Data is kept in memory only; check the database configuration to enable persistence.");
       }
       resolve(server);
     });
@@ -127,7 +130,7 @@ export const startServer = async (port = PORT) => {
           const actualPort = fallbackServer.address().port;
           console.log(`⚠️ Port ${port} in use. Fallback server running at http://localhost:${actualPort}`);
           if (!dbReady) {
-            console.log("ℹ️ Database fallback mode is active. Configure MySQL with DB_NAME/DB_USER/DB_PASSWORD to enable persistent storage.");
+            console.log("ℹ️ Database fallback mode is active. Data is kept in memory only; check the database configuration to enable persistence.");
           }
           resolve(fallbackServer);
         });
@@ -145,5 +148,8 @@ const isDirectRun =
   process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (isDirectRun && !process.env.XIAN_ELECTRON) {
-  startServer();
+  startServer().catch((error) => {
+    console.error("❌ Failed to start server:", error.message);
+    process.exit(1);
+  });
 }
