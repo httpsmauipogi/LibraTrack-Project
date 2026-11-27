@@ -27,6 +27,7 @@ import { randomBytes } from "node:crypto";
 import { Op } from "sequelize";
 import { User, Book, Borrowing, sequelize } from "../models/index.js";
 import { publicAdmin } from "../../shared/public-admin.js";
+import { portalBase } from "../../shared/portal-url.js";
 import {
   ACTIVE_STATUSES,
   REVIEW_STATUSES,
@@ -265,24 +266,24 @@ export const dashboardPage = (req, res) => {
   res.render("userDashboard", { title: "Member Dashboard", user });
 };
 
-const portals = {
+const portalsFor = (req) => ({
   catalog: {
-    base: process.env.CATALOG_URL || "http://localhost:3001",
+    base: portalBase(req, "CATALOG_URL", 3001),
     next: "/dashboard"
   },
   betlog: {
-    base: process.env.BETLOG_URL || "http://localhost:3002",
+    base: portalBase(req, "BETLOG_URL", 3002),
     next: "/admin/borrowings"
   },
   requests: {
     base: "",
     next: "/admin/requests"
   }
-};
+});
 
 // Both portals are public now, so the admin buttons link straight to them.
 export const portalLogin = (req, res) => {
-  const portal = portals[req.params.portal];
+  const portal = portalsFor(req)[req.params.portal];
   if (!portal) return res.status(404).send("Unknown portal.");
   return res.redirect(`${portal.base}${portal.next}`);
 };
@@ -292,6 +293,7 @@ export const portalLogin = (req, res) => {
 const consoleAdmin = (req) => req.session?.user || publicAdmin();
 
 export const adminPage = async (req, res) => {
+  const portals = portalsFor(req);
   let users = [];
   try {
     const records = await User.findAll({

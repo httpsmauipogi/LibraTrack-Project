@@ -13,14 +13,14 @@
 
   <!-- BORROWED BOOKS -->
   <section class="bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+    <div class="flex flex-col gap-2 border-b border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
       <h2 class="text-lg font-bold text-gray-900">Borrowed books</h2>
       <span class="text-xs text-gray-500">{{borrowedBooks.length}} record{{#if (ne borrowedBooks.length 1)}}s{{/if}}</span>
     </div>
 
     {{#if borrowedBooks.length}}
-      <div class="overflow-x-auto">
-        <table class="w-full divide-y divide-gray-100">
+      <div class="lt-table-wrap custom-scrollbar">
+        <table class="lt-table lt-table-wide divide-y divide-gray-100">
           <thead class="bg-gray-50">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Member</th>
@@ -66,7 +66,7 @@
 
   <!-- REQUESTS AND CLOSED RECORDS -->
   <section class="bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+    <div class="flex flex-col gap-2 border-b border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
       <div>
         <h2 class="text-lg font-bold text-gray-900">Requests &amp; closed records</h2>
         <p class="text-xs text-gray-500 mt-1">Pending requests are reviewed in the central admin console.</p>
@@ -75,8 +75,8 @@
     </div>
 
     {{#if requestHistory.length}}
-      <div class="overflow-x-auto">
-        <table class="w-full divide-y divide-gray-100">
+      <div class="lt-table-wrap custom-scrollbar">
+        <table class="lt-table lt-table-wide divide-y divide-gray-100">
           <thead class="bg-gray-50">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Request</th>
@@ -101,7 +101,7 @@
                 <td class="px-6 py-4 text-sm text-gray-500">{{this.notes}}</td>
                 <td class="px-6 py-4 text-right">
                   {{#if this.isReview}}
-                    <a href="http://localhost:3000/admin/requests" class="text-xs font-semibold text-indigo-600 hover:underline">Review in Admin Console</a>
+                    <a href="{{adminConsoleUrl}}/admin/requests" class="text-xs font-semibold text-indigo-600 hover:underline">Review in Admin Console</a>
                   {{else}}
                     <span class="text-xs text-gray-400">Closed</span>
                   {{/if}}

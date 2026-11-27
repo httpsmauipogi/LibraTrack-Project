@@ -31,6 +31,21 @@ test('all portals render the shared LibraTrack theme', async (t) => {
   // Canonical navbar replaces each app's bespoke header.
   assert.match(html, /bg-libra-deep/);
   assert.match(html, /Integrated Library System/);
+
+  // Responsive foundation: phone-safe viewport, touch targets, scrollable
+  // tables, short-screen modals, and a collapsible mobile navigation menu.
+  assert.match(html, /width=device-width, initial-scale=1\.0, viewport-fit=cover/);
+  assert.match(html, /min-h-\[44px\]/);
+  assert.match(html, /lt-table-wrap/);
+  assert.match(html, /100dvh/);
+
+  // The collapsible menu lives in the shared navbar used by inner pages.
+  const catalogPage = await fetch(`${base}/books`);
+  assert.equal(catalogPage.status, 200);
+  const catalogHtml = await catalogPage.text();
+  assert.match(catalogHtml, /id="lt-menu-toggle"/);
+  assert.match(catalogHtml, /id="lt-mobile-menu"/);
+  assert.match(catalogHtml, /aria-controls="lt-mobile-menu"/);
   // No stale duplicate head or bespoke footer.
   assert.equal((html.match(/<head>/g) || []).length, 1);
   assert.doesNotMatch(html, /XianFire Framework/);

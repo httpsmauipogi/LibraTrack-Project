@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1e1b4b">
   <title>{{#if title}}{{ title }} — {{/if}}LibraTrack</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -13,6 +14,8 @@
     tailwind.config = {
       theme: {
         extend: {
+          // Extra small screens let us tune phone layouts before `sm`.
+          screens: { xs: '480px' },
           fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
           colors: {
             // One palette for every LibraTrack portal.
@@ -41,8 +44,27 @@
   </script>
 
   <style type="text/tailwindcss">
-    html { scroll-behavior: smooth; }
+    /* Fluid, touch-friendly foundations shared by phones, tablets and desktops. */
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
     body { font-feature-settings: 'cv11', 'ss01'; }
+    * { -webkit-tap-highlight-color: transparent; }
+    input, select, textarea { min-width: 0; }
+    :focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
+
+    /* 16px inputs stop iOS Safari from zooming the page on focus. */
+    @media (max-width: 639px) {
+      input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+      select,
+      textarea { font-size: 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
     .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
@@ -50,12 +72,37 @@
     .view-section { display: none; }
     .view-section.active-view { display: block; }
 
+    /* Reusable layout primitives keep every portal flexible at any width. */
+    .lt-container { @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8; }
+    .lt-page { @apply mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8; }
+    .lt-heading { @apply text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900; }
+    .lt-toolbar { @apply flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between; }
+    .lt-actions { @apply flex flex-wrap items-center gap-2; }
+    .lt-grid { @apply grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3; }
+    .lt-stats-grid { @apply grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4; }
+
     /* Shared component primitives keep all portals visually consistent. */
-    .lt-card { @apply bg-white rounded-2xl border border-slate-200 shadow-card; }
-    .lt-input { @apply w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500; }
-    .lt-btn { @apply inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-5 py-2.5 transition-colors shadow-sm; }
-    .lt-btn-ghost { @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 font-semibold text-sm px-4 py-2 transition-colors; }
-    .lt-label { @apply block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5; }
-    .lt-badge { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold; }
+    .lt-card { @apply min-w-0 rounded-2xl border border-slate-200 bg-white shadow-card; }
+    .lt-card-pad { @apply p-4 sm:p-6; }
+    .lt-input { @apply w-full min-w-0 rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-base text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm; }
+    .lt-btn { @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-indigo-700 sm:px-5; }
+    .lt-btn-ghost { @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 sm:px-4; }
+    .lt-btn-sm { @apply inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors; }
+    .lt-label { @apply mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500; }
+    .lt-badge { @apply inline-flex max-w-full items-center truncate rounded-full px-2.5 py-0.5 text-xs font-semibold; }
+
+    /* Wide tables scroll inside their card instead of stretching the page. */
+    .lt-table-wrap { @apply -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0; }
+    .lt-table { @apply w-full min-w-[640px] text-left text-sm; }
+    .lt-table-wide { min-width: 860px; }
+    .lt-table th, .lt-table td { @apply px-3 py-3 sm:px-4; }
+
+    /* Modals stay usable on short phone screens and landscape tablets. */
+    .lt-modal { @apply fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6; }
+    .lt-modal-panel { @apply flex max-h-[calc(100dvh-1.5rem)] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl; }
+    .lt-modal-body { @apply overflow-y-auto p-5 sm:p-6; }
+    .lt-modal-actions { @apply flex flex-col-reverse gap-2 border-t border-slate-200 p-4 sm:flex-row sm:justify-end sm:gap-3; }
+
+    .lt-safe-bottom { padding-bottom: max(1.25rem, env(safe-area-inset-bottom)); }
   </style>
 </head>

@@ -2,45 +2,40 @@
 <body data-user-id="{{ user.id }}" data-user-name="{{ user.name }}" class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
 
   <!-- Toast Notification -->
-  <div id="toast-box" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+  <div id="toast-box" class="pointer-events-none fixed bottom-4 left-4 right-4 z-50 flex flex-col gap-2 sm:bottom-5 sm:left-auto sm:right-5"></div>
 
   <!-- Member Top Navbar -->
-  <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white font-bold font-bold text-xl flex items-center justify-center shadow-xs">
-          L
-        </div>
-        <div>
-          <span class="font-bold text-xl font-bold text-slate-900 tracking-tight">LibraTrack</span>
-        </div>
+  <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-md">
+    <div class="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-0 lg:h-16 lg:px-8">
+      <div class="flex min-w-0 items-center gap-2.5">
+        <div class="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-indigo-600 text-xl font-bold text-white shadow-xs">L</div>
+        <span class="truncate text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">LibraTrack</span>
       </div>
 
-      <nav class="flex items-center gap-2">
+      <!-- Swipeable tab row on phones; inline from laptop widths up -->
+      <nav class="custom-scrollbar order-3 -mx-4 flex w-full items-center gap-2 overflow-x-auto whitespace-nowrap px-4 pb-1 sm:px-6 lg:order-none lg:mx-0 lg:w-auto lg:overflow-visible lg:px-0 lg:pb-0" aria-label="Member navigation">
         {{#if isAdmin}}
-          <a href="/admin" class="px-4 py-2 rounded-full text-sm font-semibold bg-amber-100 text-amber-800 hover:bg-amber-200 transition">Admin Console</a>
+          <a href="/admin" class="inline-flex min-h-[44px] shrink-0 items-center rounded-full bg-amber-100 px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-200 sm:px-4 sm:text-sm">Admin Console</a>
         {{/if}}
-        <button onclick="switchPage('explore')" id="nav-explore" class="px-4 py-2 rounded-full text-sm font-semibold bg-slate-900 text-white transition">
+        <button onclick="switchPage('explore')" id="nav-explore" class="inline-flex min-h-[44px] shrink-0 items-center rounded-full bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition sm:px-4 sm:text-sm">
           Explore Books
         </button>
-        <button onclick="switchPage('account')" id="nav-account" class="px-4 py-2 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100 transition flex items-center gap-2">
+        <button onclick="switchPage('account')" id="nav-account" class="inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 sm:px-4 sm:text-sm">
           <span>My Books & Requests</span>
-          <span id="member-badge" class="bg-indigo-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+          <span id="member-badge" class="rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-bold text-white">0</span>
         </button>
-        <a href="/logout" class="px-3 py-2 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-rose-600 transition flex items-center gap-2" title="Log out">
+        <a href="/logout" class="inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-rose-600 sm:text-sm" title="Log out">
           <i class="fa-solid fa-right-from-bracket"></i>
-          <span class="hidden sm:inline">Log out</span>
+          <span>Log out</span>
         </a>
       </nav>
 
-      <div class="hidden sm:flex items-center gap-2.5 pl-4 border-l border-slate-200">
+      <div class="hidden items-center gap-2.5 border-l border-slate-200 pl-4 lg:flex">
         <div class="text-right">
           <p class="text-xs font-bold text-slate-900" id="patron-name-display">{{ user.name }}</p>
           <p class="text-[11px] font-semibold text-slate-500" id="patron-id-display">ID: {{ user.id }}</p>
         </div>
-        <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center">
-          MC
-        </div>
+        <div class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">MC</div>
       </div>
     </div>
   </header>
@@ -48,27 +43,27 @@
   <!-- PAGE 1: EXPLORE CATALOG -->
   <main id="page-explore" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Hero Search Section -->
-    <div class="bg-gradient-to-br from-libra-deep via-indigo-800 to-indigo-950 rounded-3xl p-8 sm:p-10 text-white shadow-lg mb-8">
+    <div class="mb-6 rounded-3xl bg-gradient-to-br from-libra-deep via-indigo-800 to-indigo-950 p-5 text-white shadow-lg sm:p-8 lg:p-10">
       <div class="max-w-2xl">
         <span class="text-xs font-semibold uppercase tracking-widest text-indigo-200">Digital Library Catalog</span>
-        <h1 class="font-bold text-3xl sm:text-4xl font-bold mt-2 leading-tight">
+        <h1 class="mt-2 text-2xl font-extrabold leading-tight sm:text-3xl lg:text-4xl">
           Find your next reference, textbook, or classic read.
         </h1>
-        <p class="text-indigo-200 text-sm mt-2">
+        <p class="mt-2 text-sm text-indigo-200">
           Search real-time shelf availability and reserve books online for instant pickup at the library counter.
         </p>
       </div>
 
-      <div class="mt-6 bg-white p-2 rounded-2xl shadow-md flex flex-col sm:flex-row gap-2 text-slate-800">
-        <input type="text" id="search-input" oninput="renderCatalog()" placeholder="Search title, author, ISBN, or topic..." class="flex-1 px-4 py-2.5 text-sm rounded-xl focus:outline-none">
-        <select id="category-select" onchange="renderCatalog()" class="bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-700 focus:outline-none">
+      <div class="mt-5 flex flex-col gap-2 rounded-2xl bg-white p-2 text-slate-800 shadow-md sm:flex-row sm:items-center">
+        <input type="text" id="search-input" oninput="renderCatalog()" placeholder="Search title, author, ISBN, or topic..." class="min-w-0 flex-1 rounded-xl px-4 py-2.5 text-base focus:outline-none sm:text-sm">
+        <select id="category-select" onchange="renderCatalog()" class="min-h-[44px] w-full rounded-xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 focus:outline-none sm:w-auto">
           <option value="All">All Subjects</option>
           <option value="Computer Science">Computer Science</option>
           <option value="Engineering">Engineering</option>
           <option value="Literature">Literature</option>
           <option value="History">History</option>
         </select>
-        <select id="availability-select" onchange="renderCatalog()" class="bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-700 focus:outline-none">
+        <select id="availability-select" onchange="renderCatalog()" class="min-h-[44px] w-full rounded-xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 focus:outline-none sm:w-auto">
           <option value="All">All Status</option>
           <option value="Available">Available Only</option>
         </select>
@@ -76,39 +71,39 @@
     </div>
 
     <!-- Results Header -->
-    <div class="flex items-center justify-between mb-5">
-      <h2 class="font-bold text-xl font-bold text-slate-900">Catalog Collection</h2>
+    <div class="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <h2 class="text-xl font-extrabold text-slate-900">Catalog Collection</h2>
       <span id="results-label" class="text-xs font-medium text-slate-500">Loading books...</span>
     </div>
 
     <!-- Book Cards Grid -->
-    <div id="catalog-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+    <div id="catalog-grid" class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4"></div>
   </main>
 
   <!-- PAGE 2: MY BORROWED BOOKS & RESERVATION HOLDS -->
   <main id="page-account" class="hidden flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
     <div>
-      <h1 class="font-bold text-2xl font-bold text-slate-900">My Library Activity</h1>
-      <p class="text-sm text-slate-500">Borrow requests sent here are synced directly to the Librarian Admin System.</p>
+      <h1 class="text-2xl font-extrabold text-slate-900 sm:text-3xl">My Library Activity</h1>
+      <p class="mt-1 text-sm text-slate-500">Borrow requests sent here are synced directly to the Librarian Admin System.</p>
     </div>
 
     <!-- Pending Holds -->
-    <section class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="font-bold text-slate-900 text-base">Borrow Requests</h2>
+    <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-6">
+      <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <h2 class="text-base font-bold text-slate-900">Borrow Requests</h2>
         <span class="text-xs font-semibold text-slate-400">Endpoint: GET /api/member/requests</span>
       </div>
-      <div id="my-requests-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      <div id="my-requests-container" class="grid grid-cols-1 gap-4 md:grid-cols-2"></div>
     </section>
 
     <!-- Active Borrowed Books -->
-    <section class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="font-bold text-slate-900 text-base">Currently Borrowed Books</h2>
+    <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-6">
+      <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <h2 class="text-base font-bold text-slate-900">Currently Borrowed Books</h2>
         <span class="text-xs font-semibold text-slate-400">Endpoint: GET /api/member/loans</span>
       </div>
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm">
+      <div class="lt-table-wrap custom-scrollbar">
+        <table class="lt-table">
           <thead>
             <tr class="border-b border-slate-200 text-xs uppercase text-slate-400">
               <th class="py-3 px-3">Book Title</th>
@@ -124,35 +119,37 @@
   </main>
 
   <!-- Borrow Request Modal -->
-  <div id="reserve-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-40 hidden items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
-      <span id="modal-cat" class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600">Category</span>
-      <h3 id="modal-title" class="font-bold text-xl font-bold text-slate-900 mt-3">Book Title</h3>
-      <p id="modal-author" class="text-sm text-slate-500">Author</p>
+  <div id="reserve-modal" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/60 p-3 backdrop-blur-xs sm:p-6">
+    <div class="lt-modal-panel max-w-md">
+      <div class="lt-modal-body">
+        <span id="modal-cat" class="rounded-full bg-indigo-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-600">Category</span>
+        <h3 id="modal-title" class="mt-3 text-xl font-extrabold text-slate-900">Book Title</h3>
+        <p id="modal-author" class="text-sm text-slate-500">Author</p>
 
-      <div class="mt-4 bg-slate-50 rounded-xl p-4 border border-slate-200 text-xs space-y-2">
-        <div class="flex justify-between">
-          <span class="text-slate-500">Call / Shelf Number</span>
-          <span id="modal-shelf" class="font-semibold font-bold text-slate-900"></span>
+        <div class="mt-4 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs">
+          <div class="flex flex-wrap justify-between gap-x-3">
+            <span class="text-slate-500">Call / Shelf Number</span>
+            <span id="modal-shelf" class="font-bold text-slate-900"></span>
+          </div>
+          <div class="flex flex-wrap justify-between gap-x-3">
+            <span class="text-slate-500">ISBN</span>
+            <span id="modal-isbn" class="font-semibold text-slate-700"></span>
+          </div>
+          <div class="flex flex-wrap justify-between gap-x-3">
+            <span class="text-slate-500">Copies Available</span>
+            <span id="modal-avail" class="font-bold text-indigo-600"></span>
+          </div>
         </div>
-        <div class="flex justify-between">
-          <span class="text-slate-500">ISBN</span>
-          <span id="modal-isbn" class="font-semibold text-slate-700"></span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-slate-500">Copies Available</span>
-          <span id="modal-avail" class="font-bold text-indigo-600"></span>
+
+        <div class="mt-4">
+          <label for="pickup-note" class="mb-1 block text-xs font-semibold text-slate-700">Note for Librarian</label>
+          <input type="text" id="pickup-note" placeholder="e.g., Needed for a class project" class="lt-input">
         </div>
       </div>
 
-      <div class="mt-4">
-        <label class="block text-xs font-semibold text-slate-700 mb-1">Note for Librarian</label>
-        <input type="text" id="pickup-note" placeholder="e.g., Needed for a class project" class="w-full border border-slate-300 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:border-indigo-600">
-      </div>
-
-      <div class="mt-6 flex justify-end gap-2">
-        <button onclick="closeModal()" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100">Cancel</button>
-        <button onclick="submitBorrowRequest()" class="px-5 py-2 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs">
+      <div class="lt-modal-actions">
+        <button onclick="closeModal()" class="lt-btn-ghost w-full sm:w-auto">Cancel</button>
+        <button onclick="submitBorrowRequest()" class="lt-btn w-full sm:w-auto">
           Submit Borrow Request
         </button>
       </div>
@@ -273,13 +270,15 @@
       document.getElementById('page-explore').classList.toggle('hidden', page !== 'explore');
       document.getElementById('page-account').classList.toggle('hidden', page !== 'account');
 
-      document.getElementById('nav-explore').className = page === 'explore'
-        ? 'px-4 py-2 rounded-full text-sm font-semibold bg-slate-900 text-white transition'
-        : 'px-4 py-2 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100 transition';
-
-      document.getElementById('nav-account').className = page === 'account'
-        ? 'px-4 py-2 rounded-full text-sm font-semibold bg-slate-900 text-white transition flex items-center gap-2'
-        : 'px-4 py-2 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100 transition flex items-center gap-2';
+      // Toggle state only so the responsive sizing classes stay intact.
+      [['nav-explore', page === 'explore'], ['nav-account', page === 'account']].forEach(([id, isActive]) => {
+        const tab = document.getElementById(id);
+        if (!tab) return;
+        tab.classList.toggle('bg-slate-900', isActive);
+        tab.classList.toggle('text-white', isActive);
+        tab.classList.toggle('text-slate-600', !isActive);
+        tab.classList.toggle('hover:bg-slate-100', !isActive);
+      });
 
       if (page === 'account') renderAccount();
     }
@@ -397,7 +396,7 @@
 
       document.getElementById('my-requests-container').innerHTML = requests.length
         ? requests.map(h => `
-          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div>
               <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">${h.requestId} &bull; ${h.status}</span>
               <h4 class="font-bold text-slate-900 text-sm mt-1">${h.bookTitle}</h4>

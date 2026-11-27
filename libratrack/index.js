@@ -35,6 +35,7 @@ import { dirname } from "path";
 import { randomBytes } from "crypto";
 import { connectDatabase } from "./models/db.js";
 import { registerHelpers, registerSharedPartials } from "../shared/hbs-helpers.js";
+import { portalBase } from "../shared/portal-url.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -92,7 +93,8 @@ app.use((req, res, next) => {
   res.locals.isAdmin = req.session?.user?.role === "admin";
   res.locals.currentPath = req.path;
   res.locals.reviewUrl = "/admin/requests";
-  res.locals.catalogUrl = new URL("/books", process.env.CATALOG_URL || "http://localhost:3001").toString();
+  res.locals.catalogUrl = new URL("/books", portalBase(req, "CATALOG_URL", 3001)).toString();
+  res.locals.borrowPortalUrl = portalBase(req, "BETLOG_URL", 3002);
   // Borrow Review never asks for a login, so hide auth controls there too.
   res.locals.hideAuthLinks = req.path === "/admin" || req.path.startsWith("/admin/");
   next();

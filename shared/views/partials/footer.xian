@@ -1,4 +1,4 @@
-<footer class="mt-10 py-5 border-t border-slate-200 text-center text-slate-500 text-xs">
+<footer class="lt-safe-bottom mt-10 px-4 py-5 text-center text-xs text-slate-500 sm:px-6 lg:px-8">
   &copy; 2026 LibraTrack &middot; Built with <span class="text-rose-500">&hearts;</span> at Mindoro State University
 </footer>
 </body>

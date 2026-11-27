@@ -35,6 +35,7 @@ import { dirname } from "path";
 import { randomBytes } from "crypto";
 import { connectDatabase } from "./models/db.js";
 import { registerHelpers, registerSharedPartials } from "../shared/hbs-helpers.js";
+import { portalBase } from "../shared/portal-url.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -91,7 +92,8 @@ app.use((req, res, next) => {
   // Borrow requests are reviewed on the central admin console; this portal's
   // navbar should only expose the public catalog link.
   res.locals.hideReviewLink = true;
-  res.locals.catalogUrl = new URL("/books", process.env.CATALOG_URL || "http://localhost:3001").toString();
+  res.locals.catalogUrl = new URL("/books", portalBase(req, "CATALOG_URL", 3001)).toString();
+  res.locals.adminConsoleUrl = portalBase(req, "ADMIN_URL", 3000);
   // Borrowed Books is permanently public, so its page hides auth controls.
   res.locals.hideAuthLinks =
     req.path === "/admin/borrowings" || req.path.startsWith("/admin/borrowings/");

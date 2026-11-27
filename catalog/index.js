@@ -33,6 +33,7 @@ import { dirname } from "path";
 import { connectDatabase } from "./models/db.js";
 import { publicAdmin } from "../shared/public-admin.js";
 import { registerHelpers, registerSharedPartials } from "../shared/hbs-helpers.js";
+import { portalBase } from "../shared/portal-url.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -84,8 +85,9 @@ app.use((req, res, next) => {
   res.locals.success_msg = [];
   res.locals.error_msg = [];
   res.locals.currentPath = req.path;
-  res.locals.reviewUrl = `${(process.env.BETLOG_URL || "http://localhost:3002").replace(/\/$/, "")}/admin/borrowings`;
+  res.locals.reviewUrl = `${portalBase(req, "BETLOG_URL", 3002)}/admin/borrowings`;
   res.locals.catalogUrl = "/books";
+  res.locals.adminConsoleUrl = portalBase(req, "ADMIN_URL", 3000);
   // Catalog Admin is permanently public: no sessions, no auth UI.
   res.locals.hideReviewLink = true;
   res.locals.hideAuthLinks = true;

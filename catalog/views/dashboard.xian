@@ -1,33 +1,33 @@
 {{> head }}
-<body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col">
+<body data-admin-console-url="{{adminConsoleUrl}}" class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col">
 {{> navbar}}
 
-<main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+<main class="mx-auto w-full max-w-7xl flex-1 space-y-6 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+  <div id="toast-container" class="pointer-events-none fixed left-4 right-4 top-4 z-50 flex flex-col gap-2 sm:left-auto sm:right-5 sm:top-5"></div>
 
   <!-- Page heading -->
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
     <div>
-      <h1 class="text-2xl font-extrabold text-slate-900">Catalog Administration</h1>
+      <h1 class="text-2xl font-extrabold text-slate-900 sm:text-3xl">Catalog Administration</h1>
       <p class="text-sm text-slate-500 mt-1">
         Catalog administrator <span class="font-semibold text-slate-700">{{adminUser.name}}</span>
         <span class="lt-badge bg-indigo-50 text-indigo-700 capitalize ml-1">{{adminUser.role}}</span>
       </p>
     </div>
-    <button onclick="startNewBookEntry()" class="lt-btn shrink-0">
+    <button onclick="startNewBookEntry()" class="lt-btn w-full shrink-0 sm:w-auto">
       <i class="fa-solid fa-plus"></i> Add New Book
     </button>
   </div>
 
   <!-- Tabs -->
   <nav class="flex flex-wrap gap-1 rounded-2xl bg-white border border-slate-200 shadow-card p-1.5">
-    <button onclick="switchAdminTab('overview')" id="admin-nav-overview" class="admin-nav-item flex-1 min-w-[140px] rounded-xl px-4 py-2.5 text-sm font-bold bg-indigo-600 text-white shadow-sm transition-colors">
+    <button onclick="switchAdminTab('overview')" id="admin-nav-overview" class="admin-nav-item flex-1 min-w-[120px] rounded-xl px-3 py-2.5 text-xs font-bold sm:min-w-[140px] sm:px-4 sm:text-sm bg-indigo-600 text-white shadow-sm transition-colors">
       <i class="fa-solid fa-chart-pie mr-2"></i>Overview
     </button>
-    <button onclick="switchAdminTab('inventory')" id="admin-nav-inventory" class="admin-nav-item flex-1 min-w-[140px] rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors">
+    <button onclick="switchAdminTab('inventory')" id="admin-nav-inventory" class="admin-nav-item flex-1 min-w-[120px] rounded-xl px-3 py-2.5 text-xs font-bold sm:min-w-[140px] sm:px-4 sm:text-sm text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors">
       <i class="fa-solid fa-books mr-2"></i>Book Inventory
     </button>
-    <button onclick="switchAdminTab('borrowed')" id="admin-nav-borrowed" class="admin-nav-item flex-1 min-w-[140px] rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors">
+    <button onclick="switchAdminTab('borrowed')" id="admin-nav-borrowed" class="admin-nav-item flex-1 min-w-[120px] rounded-xl px-3 py-2.5 text-xs font-bold sm:min-w-[140px] sm:px-4 sm:text-sm text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors">
       <i class="fa-solid fa-right-left mr-2"></i>Borrow Logs
       <span id="admin-badge-pending" class="ml-1.5 hidden rounded-full bg-amber-100 text-amber-700 text-xs px-2 py-0.5">0</span>
       <span id="admin-badge-overdue" class="ml-1.5 hidden rounded-full bg-rose-100 text-rose-700 text-xs px-2 py-0.5">0</span>
@@ -36,7 +36,7 @@
 
   <!-- OVERVIEW -->
   <section id="admin-tab-overview" class="admin-tab-content space-y-6">
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       <div class="lt-card p-5">
         <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Total Inventory</p>
         <p id="admin-stat-total-books" class="text-3xl font-extrabold text-slate-900 mt-2">0</p>
@@ -59,9 +59,9 @@
       </div>
     </div>
 
-    <div class="rounded-2xl bg-gradient-to-r from-libra-deep via-indigo-800 to-indigo-600 p-6 text-white shadow-lift">
+    <div class="rounded-2xl bg-gradient-to-r from-libra-deep via-indigo-800 to-indigo-600 p-5 text-white shadow-lift sm:p-6">
       <p class="text-xs font-bold uppercase tracking-[0.18em] text-indigo-200">Operations pulse</p>
-      <h2 class="mt-2 text-2xl font-extrabold">Welcome back, {{adminUser.name}}</h2>
+      <h2 class="mt-2 text-xl font-extrabold sm:text-2xl">Welcome back, {{adminUser.name}}</h2>
       <p class="mt-1 text-sm text-indigo-100/90">Review circulation history, process returns, and keep the shared catalog up to date.</p>
     </div>
 
@@ -97,8 +97,8 @@
     </div>
 
     <div class="lt-card overflow-hidden">
-      <div class="overflow-x-auto custom-scrollbar">
-        <table class="w-full text-left border-collapse">
+      <div class="lt-table-wrap custom-scrollbar">
+        <table class="lt-table lt-table-wide border-collapse">
           <thead>
             <tr class="bg-slate-50 text-slate-500 text-xs font-extrabold uppercase border-b border-slate-200">
               <th class="py-3.5 px-4">Book Title &amp; Author</th>
@@ -128,8 +128,8 @@
     </div>
 
     <div class="lt-card overflow-hidden">
-      <div class="overflow-x-auto custom-scrollbar">
-        <table class="w-full text-left border-collapse">
+      <div class="lt-table-wrap custom-scrollbar">
+        <table class="lt-table lt-table-wide border-collapse">
           <thead>
             <tr class="bg-slate-50 text-slate-500 text-xs font-extrabold uppercase border-b border-slate-200">
               <th class="py-3.5 px-4">ID</th>
@@ -152,15 +152,15 @@
 </main>
 
 <!-- MODAL: ADD / EDIT BOOK -->
-<div id="modal-add-book" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200">
-    <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+<div id="modal-add-book" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-slate-950/70 p-3 backdrop-blur-sm sm:p-6">
+  <div class="lt-modal-panel max-w-lg">
+    <div class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-4 sm:px-6">
       <h3 id="modal-book-title" class="font-extrabold text-slate-900">Add New Book Record</h3>
-      <button onclick="closeModal('modal-add-book')" class="text-slate-400 hover:text-slate-700" aria-label="Close">
+      <button onclick="closeModal('modal-add-book')" class="grid h-9 w-9 shrink-0 place-items-center text-slate-400 hover:text-slate-700" aria-label="Close">
         <i class="fa-solid fa-xmark text-lg"></i>
       </button>
     </div>
-    <form id="form-add-book" onsubmit="saveBookRecord(event)" class="p-6 space-y-4">
+    <form id="form-add-book" onsubmit="saveBookRecord(event)" class="lt-modal-body space-y-4">
       <input type="hidden" id="book-edit-id">
       <div>
         <label class="lt-label" for="book-title-input">Book Title *</label>
@@ -195,9 +195,9 @@
         <label class="lt-label" for="book-quantity-input">Copies *</label>
         <input type="number" id="book-quantity-input" min="1" value="4" required class="lt-input">
       </div>
-      <div class="pt-4 border-t border-slate-200 flex justify-end gap-3">
-        <button type="button" onclick="closeModal('modal-add-book')" class="lt-btn-ghost">Cancel</button>
-        <button type="submit" class="lt-btn">Save Book</button>
+      <div class="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end sm:gap-3">
+        <button type="button" onclick="closeModal('modal-add-book')" class="lt-btn-ghost w-full sm:w-auto">Cancel</button>
+        <button type="submit" class="lt-btn w-full sm:w-auto">Save Book</button>
       </div>
     </form>
   </div>
@@ -208,6 +208,7 @@
   let transactions = [];
   const todayStr = new Date().toISOString().split('T')[0];
   const finePerDay = 0.5;
+  const adminConsoleUrl = document.body.dataset.adminConsoleUrl || 'http://localhost:3000';
 
   const apiRequest = async (url, options = {}) => {
     const response = await fetch(url, {
@@ -438,7 +439,7 @@
       if (loan.isActiveLoan) {
         action = `<button onclick="processAdminReturn(${Number(loan.id)})" class="rounded-lg bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white shadow-sm">Process Return</button>`;
       } else if (status === 'PENDING' || status === 'APPROVED') {
-        action = `<a href="http://localhost:3000/admin/requests" class="text-xs font-semibold text-indigo-600 hover:underline">Review in Admin Console</a>`;
+        action = `<a href="${adminConsoleUrl}/admin/requests" class="text-xs font-semibold text-indigo-600 hover:underline">Review in Admin Console</a>`;
       } else {
         action = `<span class="text-xs text-slate-400">${returned ? `Returned ${escapeHtml(String(loan.returnedAt || '').slice(0, 10))}` : 'Closed'}</span>`;
       }

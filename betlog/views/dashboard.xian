@@ -3,41 +3,41 @@
 {{> navbar}}
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-  <div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900">Welcome, {{user.name}}</h1>
-    <p class="text-gray-500 mt-1 capitalize">{{user.role}} dashboard</p>
+  <div class="mb-6 sm:mb-8">
+    <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">Welcome, {{user.name}}</h1>
+    <p class="mt-1 capitalize text-gray-500">{{user.role}} dashboard</p>
   </div>
 
   <!-- Stats -->
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-    <div class="bg-white rounded-xl shadow border border-gray-100 p-6">
+  <div class="mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:mb-10 lg:grid-cols-4">
+    <div class="rounded-xl border border-gray-100 bg-white p-4 shadow sm:p-6">
       <p class="text-sm text-gray-500">Total Books</p>
       <p class="text-3xl font-bold text-gray-900 mt-2">{{stats.totalBooks}}</p>
     </div>
-    <div class="bg-white rounded-xl shadow border border-gray-100 p-6">
+    <div class="rounded-xl border border-gray-100 bg-white p-4 shadow sm:p-6">
       <p class="text-sm text-gray-500">My Active Borrowings</p>
       <p class="text-3xl font-bold text-indigo-600 mt-2">{{stats.myActive}}</p>
     </div>
-    <div class="bg-white rounded-xl shadow border border-gray-100 p-6">
+    <div class="rounded-xl border border-gray-100 bg-white p-4 shadow sm:p-6">
       <p class="text-sm text-gray-500">My Returned</p>
       <p class="text-3xl font-bold text-green-600 mt-2">{{stats.myReturned}}</p>
     </div>
-    <div class="bg-white rounded-xl shadow border border-gray-100 p-6">
+    <div class="rounded-xl border border-gray-100 bg-white p-4 shadow sm:p-6">
       <p class="text-sm text-gray-500">{{#if stats.isStaff}}Pending Requests (All){{else}}Total Returned{{/if}}</p>
       <p class="text-3xl font-bold {{#if stats.isStaff}}text-amber-600{{else}}text-gray-900{{/if}} mt-2">{{#if stats.isStaff}}{{stats.pendingAll}}{{else}}{{stats.myReturned}}{{/if}}</p>
     </div>
   </div>
 
   <!-- Quick actions -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-    <a href="/books" class="bg-white rounded-xl shadow border border-gray-100 p-6 hover:shadow-md transition group">
+  <div class="mb-8 grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 lg:mb-10">
+    <a href="/books" class="group rounded-xl border border-gray-100 bg-white p-5 shadow transition hover:shadow-md sm:p-6">
       <div class="w-12 h-12 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
       </div>
       <h3 class="font-semibold text-gray-900">Browse Catalog</h3>
       <p class="text-sm text-gray-500 mt-1">Explore books and request to borrow.</p>
     </a>
-    <a href="/borrowings" class="bg-white rounded-xl shadow border border-gray-100 p-6 hover:shadow-md transition group">
+    <a href="/borrowings" class="group rounded-xl border border-gray-100 bg-white p-5 shadow transition hover:shadow-md sm:p-6">
       <div class="w-12 h-12 rounded-lg bg-green-50 text-green-600 flex items-center justify-center mb-4">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
       </div>
@@ -45,7 +45,7 @@
       <p class="text-sm text-gray-500 mt-1">View and return your borrowed books.</p>
     </a>
     {{#if stats.isStaff}}
-      <a href="/admin/borrowings" class="bg-white rounded-xl shadow border border-gray-100 p-6 hover:shadow-md transition group">
+      <a href="/admin/borrowings" class="group rounded-xl border border-gray-100 bg-white p-5 shadow transition hover:shadow-md sm:p-6">
         <div class="w-12 h-12 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-4">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
@@ -53,7 +53,7 @@
         <p class="text-sm text-gray-500 mt-1">Approve or reject borrow requests.</p>
       </a>
     {{else}}
-      <a href="/register" class="bg-white rounded-xl shadow border border-gray-100 p-6 hover:shadow-md transition group">
+      <a href="/register" class="group rounded-xl border border-gray-100 bg-white p-5 shadow transition hover:shadow-md sm:p-6">
         <div class="w-12 h-12 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mb-4">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
         </div>
@@ -65,11 +65,12 @@
 
   <!-- Recent -->
   <div class="bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-100">
+    <div class="border-b border-gray-100 px-4 py-4 sm:px-6">
       <h2 class="font-semibold text-gray-900">{{#if stats.isStaff}}All Recent Requests{{else}}My Recent Borrowings{{/if}}</h2>
     </div>
     {{#if recent.length}}
-      <table class="w-full divide-y divide-gray-100">
+      <div class="lt-table-wrap custom-scrollbar">
+        <table class="lt-table divide-y divide-gray-100">
         <thead class="bg-gray-50">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Book</th>
@@ -90,7 +91,8 @@
             </tr>
           {{/each}}
         </tbody>
-      </table>
+        </table>
+      </div>
     {{else}}
       <div class="text-center py-12">
         <p class="text-gray-500">No borrowings yet.</p>

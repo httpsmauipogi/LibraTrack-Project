@@ -1,60 +1,126 @@
-<header class="bg-libra-deep text-white border-b border-indigo-950 sticky top-0 z-40 shadow-md">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-    <a href="/" class="flex items-center gap-3 shrink-0">
-      <span class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white text-lg shadow-lg shadow-indigo-600/30">
-        <i class="fa-solid fa-book-open"></i>
+<header class="sticky top-0 z-40 border-b border-indigo-950 bg-libra-deep text-white shadow-md">
+  <div class="lt-container flex flex-wrap items-center justify-between gap-3 py-3 sm:h-16 sm:py-0">
+    <a href="/" class="flex min-w-0 items-center gap-2.5 sm:gap-3">
+      <span class="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-indigo-600 text-lg shadow-lg shadow-indigo-600/30">
+        <i class="fa-solid fa-book-open" aria-hidden="true"></i>
       </span>
-      <span>
-        <span class="block font-extrabold text-white text-base tracking-tight leading-tight">LibraTrack</span>
-        <span class="block text-[10px] text-indigo-300 uppercase tracking-wider">Integrated Library System</span>
+      <span class="min-w-0">
+        <span class="block truncate text-base font-extrabold leading-tight tracking-tight text-white">LibraTrack</span>
+        <span class="hidden text-[10px] uppercase tracking-wider text-indigo-300 sm:block">Integrated Library System</span>
       </span>
     </a>
 
-    <nav class="hidden md:flex items-center gap-6 text-sm font-semibold text-indigo-100">
+    <nav class="hidden items-center gap-6 text-sm font-semibold text-indigo-100 md:flex" aria-label="Main navigation">
       {{#if (or currentUser user)}}
-        <a href="/dashboard" class="hover:text-white transition-colors {{#if (eq currentPath '/dashboard')}}text-white{{/if}}">Dashboard</a>
+        <a href="/dashboard" class="whitespace-nowrap transition-colors hover:text-white {{#if (eq currentPath '/dashboard')}}text-white{{/if}}">Dashboard</a>
       {{/if}}
-      <a href="{{#if catalogUrl}}{{catalogUrl}}{{else}}/books{{/if}}" class="hover:text-white transition-colors {{#if (eq currentPath '/books')}}text-white{{/if}}">Catalog</a>
+      <a href="{{#if catalogUrl}}{{catalogUrl}}{{else}}/books{{/if}}" class="whitespace-nowrap transition-colors hover:text-white {{#if (eq currentPath '/books')}}text-white{{/if}}">Catalog</a>
       {{#if (or currentUser user)}}
         {{#if (or isAdmin (eq user.role "admin") (eq user.role "staff") (eq currentUser.role "admin") (eq currentUser.role "staff"))}}
           {{#unless hideReviewLink}}
-            <a href="{{#if reviewUrl}}{{reviewUrl}}{{else}}/admin/borrowings{{/if}}" class="hover:text-white transition-colors">Review Requests</a>
+            <a href="{{#if reviewUrl}}{{reviewUrl}}{{else}}/admin/borrowings{{/if}}" class="whitespace-nowrap transition-colors hover:text-white">Review Requests</a>
           {{/unless}}
         {{else}}
-          <a href="/borrowings" class="hover:text-white transition-colors {{#if (eq currentPath '/borrowings')}}text-white{{/if}}">My Borrowings</a>
+          <a href="/borrowings" class="whitespace-nowrap transition-colors hover:text-white {{#if (eq currentPath '/borrowings')}}text-white{{/if}}">My Borrowings</a>
         {{/if}}
       {{/if}}
     </nav>
 
     {{#unless hideAuthLinks}}
-      <div class="flex items-center gap-3">
+      <div class="hidden items-center gap-3 md:flex">
         {{#if (or currentUser user)}}
-          <span class="hidden sm:inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/10 px-3 py-1.5 text-xs font-semibold">
-            <span class="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center text-[11px] font-bold">
+          <span class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-semibold">
+            <span class="grid h-6 w-6 place-items-center rounded-full bg-indigo-500 text-[11px] font-bold">
               {{#if currentUser}}{{initial currentUser.name}}{{else}}{{initial user.name}}{{/if}}
             </span>
             <span class="hidden lg:inline">{{#if currentUser}}{{currentUser.name}}{{else}}{{user.name}}{{/if}}</span>
           </span>
-          <a href="/logout" class="rounded-xl bg-white/10 hover:bg-white/20 px-3.5 py-2 text-xs font-bold transition-colors">
-            <i class="fa-solid fa-right-from-bracket mr-1"></i>Sign out
+          <a href="/logout" class="whitespace-nowrap rounded-xl bg-white/10 px-3.5 py-2 text-xs font-bold transition-colors hover:bg-white/20">
+            <i class="fa-solid fa-right-from-bracket mr-1" aria-hidden="true"></i><span class="hidden sm:inline">Sign out</span><span class="sm:hidden">Exit</span>
           </a>
         {{else}}
-          <a href="/login" class="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-sm font-bold transition-colors">
-            <i class="fa-solid fa-right-to-bracket mr-1"></i>Sign in
+          <a href="/login" class="whitespace-nowrap rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold transition-colors hover:bg-indigo-500">
+            <i class="fa-solid fa-right-to-bracket mr-1" aria-hidden="true"></i>Sign in
+          </a>
+        {{/if}}
+      </div>
+    {{/unless}}
+
+    <button id="lt-menu-toggle" type="button" class="inline-grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 text-base transition-colors hover:bg-white/20 md:hidden" aria-controls="lt-mobile-menu" aria-expanded="false" aria-label="Toggle navigation menu">
+      <i class="fa-solid fa-bars" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  <div id="lt-mobile-menu" class="hidden border-t border-white/10 bg-libra-deep px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 md:hidden">
+    <nav class="flex flex-col gap-1 text-sm font-semibold text-indigo-100" aria-label="Mobile navigation">
+      {{#if (or currentUser user)}}
+        <a href="/dashboard" class="rounded-lg px-3 py-2.5 transition-colors hover:bg-white/10 hover:text-white {{#if (eq currentPath '/dashboard')}}bg-white/10 text-white{{/if}}">Dashboard</a>
+      {{/if}}
+      <a href="{{#if catalogUrl}}{{catalogUrl}}{{else}}/books{{/if}}" class="rounded-lg px-3 py-2.5 transition-colors hover:bg-white/10 hover:text-white {{#if (eq currentPath '/books')}}bg-white/10 text-white{{/if}}">Catalog</a>
+      {{#if (or currentUser user)}}
+        {{#if (or isAdmin (eq user.role "admin") (eq user.role "staff") (eq currentUser.role "admin") (eq currentUser.role "staff"))}}
+          {{#unless hideReviewLink}}
+            <a href="{{#if reviewUrl}}{{reviewUrl}}{{else}}/admin/borrowings{{/if}}" class="rounded-lg px-3 py-2.5 transition-colors hover:bg-white/10 hover:text-white">Review Requests</a>
+          {{/unless}}
+        {{else}}
+          <a href="/borrowings" class="rounded-lg px-3 py-2.5 transition-colors hover:bg-white/10 hover:text-white {{#if (eq currentPath '/borrowings')}}bg-white/10 text-white{{/if}}">My Borrowings</a>
+        {{/if}}
+      {{/if}}
+    </nav>
+    {{#unless hideAuthLinks}}
+      <div class="mt-3 border-t border-white/10 pt-3">
+        {{#if (or currentUser user)}}
+          <div class="mb-2 flex items-center gap-2 px-3 text-xs font-semibold text-indigo-200">
+            <span class="grid h-7 w-7 place-items-center rounded-full bg-indigo-500 text-[11px] font-bold text-white">
+              {{#if currentUser}}{{initial currentUser.name}}{{else}}{{initial user.name}}{{/if}}
+            </span>
+            <span class="truncate">{{#if currentUser}}{{currentUser.name}}{{else}}{{user.name}}{{/if}}</span>
+          </div>
+          <a href="/logout" class="flex min-h-[44px] items-center rounded-lg px-3 py-2.5 text-sm font-semibold text-rose-200 transition-colors hover:bg-white/10">
+            <i class="fa-solid fa-right-from-bracket mr-2" aria-hidden="true"></i>Sign out
+          </a>
+        {{else}}
+          <a href="/login" class="flex min-h-[44px] items-center rounded-lg bg-indigo-600 px-3 py-2.5 text-sm font-bold transition-colors hover:bg-indigo-500">
+            <i class="fa-solid fa-right-to-bracket mr-2" aria-hidden="true"></i>Sign in
           </a>
         {{/if}}
       </div>
     {{/unless}}
   </div>
+
+  <script>
+    (() => {
+      const toggle = document.getElementById('lt-menu-toggle');
+      const menu = document.getElementById('lt-mobile-menu');
+      if (!toggle || !menu) return;
+
+      const closeMenu = () => {
+        menu.classList.add('hidden');
+        toggle.setAttribute('aria-expanded', 'false');
+      };
+
+      toggle.addEventListener('click', () => {
+        const isOpen = !menu.classList.toggle('hidden');
+        toggle.setAttribute('aria-expanded', String(isOpen));
+      });
+      menu.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeMenu));
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeMenu();
+      });
+      window.addEventListener('resize', () => {
+        if (window.innerWidth >= 768) closeMenu();
+      });
+    })();
+  </script>
 </header>
 
 {{#each success_msg}}
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-    <div class="rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 text-sm" role="status">{{this}}</div>
+  <div class="lt-container mt-4">
+    <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">{{this}}</div>
   </div>
 {{/each}}
 {{#each error_msg}}
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-    <div class="rounded-xl bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 text-sm" role="alert">{{this}}</div>
+  <div class="lt-container mt-4">
+    <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert">{{this}}</div>
   </div>
 {{/each}}
